@@ -3,10 +3,50 @@
 サブテーマ3「文脈・意図の理解」プロトタイプ。  
 日本語ビジネスメールの **表面と裏のズレ**（丁寧な怒り／諦めの短文／感情の変化）を Gemini で解析し、優先度・感情スコアを Streamlit ダッシュボードで可視化します。
 
-> 検証プラン詳細: `local_debug/basic_sources/第9回宿題_サブテーマ3_検証プラン案.md`  
-> 本プロトタイプは **案A（LLM完結型）** の最小構成です。
+## アーキテクチャ
 
----
+LangGraph エージェントや MCPサーバーは使わず、**Streamlit が UI とアプリロジックを兼ね、その先に Gemini API を 1段だけ呼ぶ** 「LLM完結型」のシンプルな構成です。
+選択された複数メールは `ThreadPoolExecutor`（最大4並列）で同時に Gemini に投げ、JSONで返ってきた評価結果を優先度順に色付けして表示します。
+
+```mermaid
+flowchart LR
+    user["👤 ユーザー"]
+
+    subgraph browser["🖥 ブラウザ"]
+        ui["チャットUI<br>（Streamlit ダッシュボード）"]
+    end
+
+    subgraph app["⚙️ Streamlit アプリ (app/)"]
+        main["main.py<br>UI / メール選択 / 結果描画"]
+        analyzer["analyzer.py<br>プロンプト生成 + JSONパース"]
+        pool["🧵 ThreadPoolExecutor<br>（最大4並列）"]
+    end
+
+    subgraph data["📄 メールデータ"]
+        json_data["sample_emails.json<br>（モック20通）"]
+    end
+
+    subgraph llm["🤖 LLM"]
+        gemini["Gemini API<br>(gemini-2.5-flash)"]
+    end
+
+    user -->|"メール選択 → 解析ボタン"| ui
+    ui --> main
+    main -->|"読み込み"| json_data
+    main -->|"選択メールを並列投入"| pool
+    pool -->|"1通ずつ"| analyzer
+    analyzer -->|"プロンプト"| gemini
+    gemini -->|"JSON応答"| analyzer
+    analyzer -->|"AnalysisResult"| main
+    main -->|"優先度で色付け表示"| ui
+    ui --> user
+
+    style llm fill:#fff4d0,stroke:#cc9944,color:#000
+    style gemini fill:#ffe8a8,stroke:#cc9944,color:#000
+    style browser fill:#f0f4ff,stroke:#aabbdd,color:#000
+    style app fill:#f0fff4,stroke:#88cc99,color:#000
+    style data fill:#f4f4f4,stroke:#999,color:#000
+```
 
 ## 構成
 
