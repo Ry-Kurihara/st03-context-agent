@@ -1,0 +1,702 @@
+[
+  {
+    "id": "mixed_emotion_001",
+    "thread_id": "subj:ご提案へのフィードバック (混在感情_001)",
+    "subject": "ご提案へのフィードバック (混在感情_001)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-23T10:12:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n御社の技術チームは非常に熱心に提案していただき、技術的な内容も素晴らしいと感じております。ただ、担当営業の方と連絡が取りづらいことがあり、その点が少し気になっております。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-001@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_002",
+    "thread_id": "subj:導入検討の件について (混在感情_002)",
+    "subject": "Re: 導入検討の件について (混在感情_002)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-22T15:24:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n提案内容自体は大変魅力的で、技術的な実現可能性も高いと評価しています。しかしながら、営業担当者からの返信が遅いことが多く、スケジュール調整に苦労しております。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-002@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_003",
+    "thread_id": "subj:お打ち合わせ後のご返信 (混在感情_003)",
+    "subject": "お打ち合わせ後のご返信 (混在感情_003)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-19T11:08:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n技術部門の皆様の対応は迅速かつ丁寧で、非常に好感を持っております。一方で、契約関連の窓口とのやり取りがスムーズでなく、進行に遅れが出ている状況です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-003@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_004",
+    "thread_id": "subj:ご提案内容の確認結果 (混在感情_004)",
+    "subject": "ご提案内容の確認結果 (混在感情_004)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-18T16:42:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n製品の品質については申し分なく、技術サポートも充実していると感じます。ただし、営業からの提案が画一的で、弊社の個別ニーズへの配慮が不足している印象を受けました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-004@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_005",
+    "thread_id": "subj:サービス導入の検討状況 (混在感情_005)",
+    "subject": "Re: サービス導入の検討状況 (混在感情_005)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-17T09:55:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nエンジニアの方々の専門知識は非常に高く、信頼できると感じています。しかし、営業チームとの連携が取れていないようで、同じ質問を何度もされることがあります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-005@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_006",
+    "thread_id": "subj:詳細確認後のご連絡 (混在感情_006)",
+    "subject": "詳細確認後のご連絡 (混在感情_006)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-16T13:17:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n技術的な課題解決能力は高く評価しております。ですが、営業担当者が頻繁に交代するため、こちらの状況を毎回説明し直す必要があり、負担を感じています。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-006@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_007",
+    "thread_id": "subj:社内検討結果のご報告 (混在感情_007)",
+    "subject": "社内検討結果のご報告 (混在感情_007)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-15T17:03:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nデモンストレーションは非常に分かりやすく、導入イメージが明確になりました。ただ、価格面での交渉余地が少なく、予算との調整が難航しています。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-007@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_008",
+    "thread_id": "subj:ご提案内容について (混在感情_008)",
+    "subject": "Re: ご提案内容について (混在感情_008)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-12T10:36:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n御社のソリューションは技術的に先進的で魅力を感じます。しかし、導入後のサポート体制について具体的な説明が不足しており、不安が残ります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-008@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_009",
+    "thread_id": "subj:検討状況のお知らせ (混在感情_009)",
+    "subject": "検討状況のお知らせ (混在感情_009)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-11T14:21:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n製品機能は弊社のニーズに合致しており、前向きに検討しています。ただし、営業からの情報提供が断片的で、全体像が把握しづらい状況です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-009@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_010",
+    "thread_id": "subj:ご提案へのご回答 (混在感情_010)",
+    "subject": "ご提案へのご回答 (混在感情_010)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-10T09:48:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n技術チームの提案は非常に具体的で実践的です。一方、営業部門からの見積もり提示が遅く、社内での稟議スケジュールに影響が出ています。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-010@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_011",
+    "thread_id": "subj:ご提案へのフィードバック (混在感情_011)",
+    "subject": "ご提案へのフィードバック (混在感情_011)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-09T16:05:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nご提案内容には大変興味を持っております。ただし、社内での承認プロセスが複雑で、実現までに相当な時間がかかる見込みです。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-011@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_012",
+    "thread_id": "subj:導入検討の件について (混在感情_012)",
+    "subject": "Re: 導入検討の件について (混在感情_012)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-08T12:27:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n導入自体は前向きに考えています。しかしながら、現在進行中の他プロジェクトとのリソース調整が難しく、着手時期が不透明な状況です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-012@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_013",
+    "thread_id": "subj:お打ち合わせ後のご返信 (混在感情_013)",
+    "subject": "お打ち合わせ後のご返信 (混在感情_013)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-05T15:39:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n製品の機能性については高く評価しております。ただ、既存システムとの連携面で技術的なハードルがあり、慎重な検討が必要と考えています。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-013@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_014",
+    "thread_id": "subj:ご提案内容の確認結果 (混在感情_014)",
+    "subject": "ご提案内容の確認結果 (混在感情_014)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-04T10:14:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nぜひ導入を進めたいと考えています。しかし、予算の都合上、今期中の実施は困難で、来期以降の検討とせざるを得ない状況です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-014@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_015",
+    "thread_id": "subj:サービス導入の検討状況 (混在感情_015)",
+    "subject": "Re: サービス導入の検討状況 (混在感情_015)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-06-03T17:51:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n御社のサービスには強い関心があります。ただし、競合他社の提案も並行して検討中であり、比較評価に時間を要する見込みです。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-015@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_016",
+    "thread_id": "subj:詳細確認後のご連絡 (混在感情_016)",
+    "subject": "詳細確認後のご連絡 (混在感情_016)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-02T11:33:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n技術的な優位性は理解できました。一方で、導入に伴う社内体制の変更が必要となり、関係部署の合意形成に時間がかかりそうです。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-016@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_017",
+    "thread_id": "subj:社内検討結果のご報告 (混在感情_017)",
+    "subject": "社内検討結果のご報告 (混在感情_017)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-06-01T14:46:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n非常に魅力的なご提案だと感じています。ただ、弊社のセキュリティポリシーとの適合性について、情報システム部門の確認が必要です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-017@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_018",
+    "thread_id": "subj:ご提案内容について (混在感情_018)",
+    "subject": "Re: ご提案内容について (混在感情_018)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-29T09:19:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n導入効果については期待しております。しかし、運用開始後の教育・トレーニングにかかるコストと時間が懸念材料となっています。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-018@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_019",
+    "thread_id": "subj:検討状況のお知らせ (混在感情_019)",
+    "subject": "検討状況のお知らせ (混在感情_019)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-28T13:58:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nご提案のソリューションは革新的で興味深いです。ですが、弊社の業務フローへの適合度について、実証実験を経てから判断したいと考えております。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-019@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_020",
+    "thread_id": "subj:ご提案へのご回答 (混在感情_020)",
+    "subject": "ご提案へのご回答 (混在感情_020)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-27T16:11:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n製品自体は素晴らしいと思います。ただ、導入実績が少ない点が気になっており、先行事例の詳細情報をご提供いただけないでしょうか。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-020@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_021",
+    "thread_id": "subj:ご提案へのフィードバック (混在感情_021)",
+    "subject": "ご提案へのフィードバック (混在感情_021)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-26T10:07:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n詳細なご提案をいただき、誠にありがとうございます。現時点では社内の優先順位が変更となり、本件は一旦保留とさせていただきたく存じます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-021@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_022",
+    "thread_id": "subj:導入検討の件について (混在感情_022)",
+    "subject": "Re: 導入検討の件について (混在感情_022)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-25T14:29:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n貴重なお時間を割いてご説明いただき、大変感謝しております。しかしながら、今期の予算配分が確定してしまい、次年度以降の検討とさせてください。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-022@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_023",
+    "thread_id": "subj:お打ち合わせ後のご返信 (混在感情_023)",
+    "subject": "お打ち合わせ後のご返信 (混在感情_023)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-22T11:44:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n丁寧なご対応をいただき、ありがとうございました。残念ながら、経営方針の変更により、本プロジェクト自体が中止となりました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-023@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_024",
+    "thread_id": "subj:ご提案内容の確認結果 (混在感情_024)",
+    "subject": "ご提案内容の確認結果 (混在感情_024)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-21T15:16:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n非常に参考になるご提案をありがとうございます。ただ、弊社の現状を鑑みますと、実施は時期尚早と判断せざるを得ません。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-024@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_025",
+    "thread_id": "subj:サービス導入の検討状況 (混在感情_025)",
+    "subject": "Re: サービス導入の検討状況 (混在感情_025)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-20T09:41:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nご尽力いただきましたこと、心より感謝申し上げます。誠に恐縮ですが、社内調整の結果、別のソリューションを採用することになりました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-025@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_026",
+    "thread_id": "subj:詳細確認後のご連絡 (混在感情_026)",
+    "subject": "詳細確認後のご連絡 (混在感情_026)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-19T13:22:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n詳細な資料をご提供いただき、ありがとうございます。検討を重ねた結果、現行システムの継続使用が最適との結論に至りました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-026@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_027",
+    "thread_id": "subj:社内検討結果のご報告 (混在感情_027)",
+    "subject": "社内検討結果のご報告 (混在感情_027)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-18T16:37:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n大変勉強になるお話をありがとうございました。ただし、現段階では具体的なニーズが顕在化しておらず、将来的な検討課題とさせていただきます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-027@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_028",
+    "thread_id": "subj:ご提案内容について (混在感情_028)",
+    "subject": "Re: ご提案内容について (混在感情_028)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-15T10:53:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nご提案の機会をいただき、感謝しております。残念ながら、組織再編に伴い担当部署が変更となり、私からは判断できない状況となりました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-028@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_029",
+    "thread_id": "subj:検討状況のお知らせ (混在感情_029)",
+    "subject": "検討状況のお知らせ (混在感情_029)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-14T14:18:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n丁寧なフォローアップをありがとうございます。しかし、想定していた効果が得られるか不確実性が高く、今回は見送らせていただきます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-029@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_030",
+    "thread_id": "subj:ご提案へのご回答 (混在感情_030)",
+    "subject": "ご提案へのご回答 (混在感情_030)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-13T09:32:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n貴重な情報をありがとうございました。検討の結果、内製での対応が可能と判断し、外部ソリューションの導入は行わないことにしました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-030@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_031",
+    "thread_id": "subj:ご提案へのフィードバック (混在感情_031)",
+    "subject": "ご提案へのフィードバック (混在感情_031)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-12T15:47:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n基本的には導入の方向で考えています。ただし、価格面での調整と、導入スケジュールの柔軟性が確保できることが前提条件となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-031@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_032",
+    "thread_id": "subj:導入検討の件について (混在感情_032)",
+    "subject": "Re: 導入検討の件について (混在感情_032)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-11T11:26:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nぜひ進めたいと思っております。カスタマイズ対応の範囲と追加費用について明確にしていただければ、正式な稟議を開始できます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-032@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_033",
+    "thread_id": "subj:お打ち合わせ後のご返信 (混在感情_033)",
+    "subject": "お打ち合わせ後のご返信 (混在感情_033)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-08T16:09:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n前向きに検討させていただきます。ただし、競合製品との機能比較表と、総コスト試算を改めてご提示いただけないでしょうか。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-033@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_034",
+    "thread_id": "subj:ご提案内容の確認結果 (混在感情_034)",
+    "subject": "ご提案内容の確認結果 (混在感情_034)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-07T10:58:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n導入に向けて社内調整を進めています。保守・サポート契約の詳細条件と、SLA（サービスレベル契約）の内容を確認させてください。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-034@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_035",
+    "thread_id": "subj:サービス導入の検討状況 (混在感情_035)",
+    "subject": "Re: サービス導入の検討状況 (混在感情_035)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-06T13:35:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n実施の方向で上司の承認を得つつあります。最終判断には、パイロット導入の実施と、その結果の評価が必要となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-035@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_036",
+    "thread_id": "subj:詳細確認後のご連絡 (混在感情_036)",
+    "subject": "詳細確認後のご連絡 (混在感情_036)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-05T09:24:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n積極的に進めたいと考えています。ただし、契約形態について月額サブスクリプション方式への変更が可能かご検討いただけますでしょうか。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-036@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_037",
+    "thread_id": "subj:社内検討結果のご報告 (混在感情_037)",
+    "subject": "社内検討結果のご報告 (混在感情_037)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-05-04T14:43:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n導入を推進する立場です。しかし、役員会での承認には、ROI（投資対効果）の具体的な試算データが必須となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-037@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_038",
+    "thread_id": "subj:ご提案内容について (混在感情_038)",
+    "subject": "Re: ご提案内容について (混在感情_038)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-05-01T11:12:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n基本的には賛成です。ただし、既存ベンダーとの契約が残っているため、移行時期とデータ移行の支援体制について協議が必要です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-038@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_039",
+    "thread_id": "subj:検討状況のお知らせ (混在感情_039)",
+    "subject": "検討状況のお知らせ (混在感情_039)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-30T15:28:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nぜひ採用したいと考えています。導入決定には、情報セキュリティ監査の通過と、個人情報保護対応の確認が前提となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-039@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_040",
+    "thread_id": "subj:ご提案へのご回答 (混在感情_040)",
+    "subject": "ご提案へのご回答 (混在感情_040)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-29T10:49:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n前向きに動いています。最終的には、御社の財務状況と事業継続性について、弊社の購買部門による審査が必要となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-040@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_041",
+    "thread_id": "subj:ご提案へのフィードバック (混在感情_041)",
+    "subject": "ご提案へのフィードバック (混在感情_041)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-28T13:14:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n大変素晴らしいご提案をありがとうございます。弊社としては非常に参考になりました。ただ、現在のところ具体的な導入計画はございません。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-041@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_042",
+    "thread_id": "subj:導入検討の件について (混在感情_042)",
+    "subject": "Re: 導入検討の件について (混在感情_042)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-27T16:31:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n興味深いお話を伺うことができ、感謝しております。今後の参考とさせていただきますが、当面は現行体制を継続する方針です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-042@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_043",
+    "thread_id": "subj:お打ち合わせ後のご返信 (混在感情_043)",
+    "subject": "お打ち合わせ後のご返信 (混在感情_043)",
+    "sender": "yamada.taro@demo-company.com",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-24T09:57:00",
+    "body": "お世話になっております。\r\nYamadaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n貴重な情報提供をいただき、ありがとうございました。大変勉強になりましたが、弊社の現状には適合しないと判断いたしました。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nYamada\r\nyamada.taro@demo-company.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-043@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_044",
+    "thread_id": "subj:ご提案内容の確認結果 (混在感情_044)",
+    "subject": "ご提案内容の確認結果 (混在感情_044)",
+    "sender": "sato.yuki@test-business.co.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-23T14:22:00",
+    "body": "お世話になっております。\r\nSatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n素晴らしい技術力をお持ちですね。機会があればまたお話を伺いたいと思いますが、現時点では具体的なニーズがない状況です。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSato\r\nsato.yuki@test-business.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-044@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_045",
+    "thread_id": "subj:サービス導入の検討状況 (混在感情_045)",
+    "subject": "Re: サービス導入の検討状況 (混在感情_045)",
+    "sender": "watanabe.kenji@example-inc.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-22T10:38:00",
+    "body": "お世話になっております。\r\nWatanabeです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n丁寧なご説明をありがとうございました。非常に魅力的ではありますが、予算面での制約が大きく、実現は困難と思われます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nWatanabe\r\nwatanabe.kenji@example-inc.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-045@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_046",
+    "thread_id": "subj:詳細確認後のご連絡 (混在感情_046)",
+    "subject": "詳細確認後のご連絡 (混在感情_046)",
+    "sender": "kobayashi.mika@sample-enterprise.com",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-21T15:05:00",
+    "body": "お世話になっております。\r\nKobayashiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n有意義なお時間をいただき、感謝しております。将来的には可能性があるかもしれませんが、現段階では検討対象外となります。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKobayashi\r\nkobayashi.mika@sample-enterprise.com",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-046@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_047",
+    "thread_id": "subj:社内検討結果のご報告 (混在感情_047)",
+    "subject": "社内検討結果のご報告 (混在感情_047)",
+    "sender": "ito.takeshi@demo-solutions.co.jp",
+    "to": [
+      "contact@your-business.co.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-20T11:41:00",
+    "body": "お世話になっております。\r\nItoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n革新的なアプローチだと感じました。ただし、弊社の業界特性を考慮すると、導入効果が限定的と予想されます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nIto\r\nito.takeshi@demo-solutions.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-047@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_048",
+    "thread_id": "subj:ご提案内容について (混在感情_048)",
+    "subject": "Re: ご提案内容について (混在感情_048)",
+    "sender": "kato.naomi@test-systems.jp",
+    "to": [
+      "proposal@your-solutions.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-17T16:18:00",
+    "body": "お世話になっております。\r\nKatoです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n大変参考になるご提案でした。情報収集としては有益でしたが、実施に向けた具体的なステップは想定しておりません。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nKato\r\nkato.naomi@test-systems.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-048@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_049",
+    "thread_id": "subj:検討状況のお知らせ (混在感情_049)",
+    "subject": "検討状況のお知らせ (混在感情_049)",
+    "sender": "tanaka.ichiro@example-corp.co.jp",
+    "to": [
+      "sales@your-company.com"
+    ],
+    "cc": [],
+    "received_at": "2026-04-16T09:27:00",
+    "body": "お世話になっております。\r\nTanakaです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\n素晴らしい実績をお持ちですね。弊社としても関心はございますが、現在の優先課題とは方向性が異なるように思われます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nTanaka\r\ntanaka.ichiro@example-corp.co.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-049@mixed-emotion-research.example.com>"
+  },
+  {
+    "id": "mixed_emotion_050",
+    "thread_id": "subj:ご提案へのご回答 (混在感情_050)",
+    "subject": "ご提案へのご回答 (混在感情_050)",
+    "sender": "suzuki.hanako@sample-industry.jp",
+    "to": [
+      "sales-team@your-service.jp"
+    ],
+    "cc": [],
+    "received_at": "2026-04-15T14:54:00",
+    "body": "お世話になっております。\r\nSuzukiです。\r\n\r\n先日のご提案につきまして、以下の通りご返信申し上げます。\r\n\r\nご尽力いただき、誠にありがとうございました。大変魅力的ではありますが、タイミングが合わず、今回は見送らせていただきます。\r\n\r\n引き続きよろしくお願いいたします。\r\n\r\nSuzuki\r\nsuzuki.hanako@sample-industry.jp",
+    "source": "混在感情メール50通（.eml）",
+    "message_id": "<mixed-emotion-050@mixed-emotion-research.example.com>"
+  }
+]
