@@ -1,116 +1,190 @@
-"""Gemini APIにメール本文を投げて感情・意図・優先度をJSONで返すモジュール。"""
+"""ステージ1：感情パラメータ化（Gemini呼び出し）。
+
+プロンプトはこのファイルに埋め込まず `prompts/` から読む。
+指示文の更新主体（吉田さん）がPythonを触らずに差し替えられるようにするため。
+"""
 from __future__ import annotations
 
+import hashlib
 import json
-import os
-import re
-from dataclasses import dataclass
-from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Sequence
 
-from google import genai
+import llm
+import prompt_loader
+import schema
+import thread as thread_mod
+from llm import DEFAULT_MODEL, DEFAULT_TEMPERATURE  # noqa: F401 (再公開)
+from prompts import registry
+from schema import AnalysisParseError, AnalysisResult
 
+DEFAULT_PROMPT_ID = registry.DEFAULT_ANALYSIS_PROMPT
 
-PROMPT_TEMPLATE = """あなたは日本語ビジネスメールを解析する専門のアシスタントです。
-以下のメールについて、送り手の文脈・感情・意図を分析し、必ず指定のJSON形式のみを出力してください。
-
-# 評価軸（すべて 0.0〜1.0 の小数で出力）
-- urgency: 緊急度。即時対応が必要な度合い。
-- dissatisfaction: 不満度。文面の裏にある不満・苛立ち・諦めも含めて評価する。
-- toneWorsening: トーン悪化度。スレッド内で語気・関係性が悪化している度合い（単発メールでは表面と本心のズレの大きさで評価）。
-
-# 優先度の分類（priority）
-- "最優先": 関係性悪化リスクや業務影響が高く、即時の返信が必要。
-- "高": 当日中に対応すべき。
-- "中": 数日内に対応すべき。
-- "低": 急がないが返信は必要。
-
-# 出力フォーマット（必ずこのキーのみを含む厳密なJSON）
-{{
-  "urgency": <float>,
-  "dissatisfaction": <float>,
-  "toneWorsening": <float>,
-  "priority": "<最優先|高|中|低>",
-  "summary": "<日本語2〜3文。表面の意味と裏にある真意の差分に必ず触れる>"
-}}
-
-# 入力メール
-件名: {subject}
-送信者: {sender}
-受信日時: {received_at}
-本文:
----
-{body}
----
-
-JSONのみ出力してください。コードブロックや前後の説明文は不要です。
-"""
+RETRY_SUFFIX = (
+    "\n\n# 追加指示（再出力）\n"
+    "先ほどの応答からJSONを読み取れませんでした。"
+    "解説や前置きを一切付けず、指定された構造のJSONだけを出力してください。"
+)
 
 
-@dataclass
-class AnalysisResult:
-    urgency: float
-    dissatisfaction: float
-    tone_worsening: float
-    priority: str
-    summary: str
-    raw: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "urgency": self.urgency,
-            "dissatisfaction": self.dissatisfaction,
-            "toneWorsening": self.tone_worsening,
-            "priority": self.priority,
-            "summary": self.summary,
-        }
+def _token_values(target: thread_mod.Thread | dict[str, Any]) -> dict[str, str]:
+    """プロンプトが要求しうるトークンの値をまとめて作る。"""
+    if isinstance(target, thread_mod.Thread):
+        last = target.last_mail
+        thread_text = thread_mod.format_thread(target)
+    else:
+        last = target
+        thread_text = thread_mod.format_mail(target)
+    return {
+        "EMAIL_THREAD": thread_text,
+        "SUBJECT": str(last.get("subject", "")),
+        "SENDER": str(last.get("sender", "")),
+        "RECEIVED_AT": str(last.get("received_at", "")),
+        "BODY": str(last.get("body", "")),
+    }
 
 
-_client: genai.Client | None = None
+def build_prompt(
+    target: thread_mod.Thread | dict[str, Any],
+    *,
+    prompt_id: str,
+    template: str | None = None,
+) -> str:
+    """指示文にメール（スレッド）を差し込んだ、実際に送るプロンプト全文。
+
+    `template` を渡すと、登録済み指示文の代わりにその文面を使う
+    （画面で貼り付けた指示文をそのまま試すため）。
+    """
+    if template is None:
+        registry.get_spec(prompt_id)
+        template = registry.load_prompt(prompt_id)
+    return prompt_loader.render_available(template, _token_values(target))
 
 
-def _get_client() -> genai.Client:
-    global _client
-    if _client is None:
-        _client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    return _client
+def cache_key(
+    target: thread_mod.Thread | dict[str, Any],
+    *,
+    prompt_id: str,
+    model_name: str | None,
+    temperature: float,
+    template: str | None = None,
+) -> str:
+    """同じ条件の再実行で二重課金しないためのキー。"""
+    if template is None:
+        template = registry.load_prompt(prompt_id) if _prompt_exists(prompt_id) else ""
+    payload = {
+        "input": thread_mod.target_text(target),
+        "prompt_id": prompt_id,
+        "prompt": template,
+        "model": model_name or llm.default_model(),
+        "temperature": temperature,
+    }
+    blob = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def _extract_json(text: str) -> dict[str, Any]:
-    """LLMの応答から最初のJSONオブジェクトを取り出す。"""
-    cleaned = text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-        cleaned = re.sub(r"\s*```$", "", cleaned)
-    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if not match:
-        raise ValueError(f"応答からJSONが見つかりませんでした: {text!r}")
-    return json.loads(match.group(0))
+def _prompt_exists(prompt_id: str) -> bool:
+    try:
+        registry.get_spec(prompt_id)
+    except KeyError:
+        return False
+    return True
+
+
+def analyze(
+    target: thread_mod.Thread | dict[str, Any],
+    *,
+    prompt_id: str = DEFAULT_PROMPT_ID,
+    model_name: str | None = None,
+    temperature: float = DEFAULT_TEMPERATURE,
+    client: Any = None,
+    template: str | None = None,
+) -> AnalysisResult:
+    """1スレッド（または1通）を解析する。JSONが読めなければ1回だけ再試行する。"""
+    spec = registry.get_spec(prompt_id)  # 未登録なら KeyError（API呼び出し前に落とす）
+    prompt = build_prompt(target, prompt_id=prompt_id, template=template)
+    model = model_name or llm.default_model()
+    meta = {
+        "prompt_id": prompt_id,
+        "prompt_label": spec.label,
+        "schema_version": spec.schema_version,
+        "input_unit": "thread" if isinstance(target, thread_mod.Thread) else "mail",
+        "model": model,
+        "temperature": temperature,
+        "target_key": thread_mod.target_key(target),
+        "template_override": template is not None,
+    }
+
+    text = llm.call_text(prompt, client=client, model_name=model, temperature=temperature)
+    try:
+        return schema.parse_analysis(text, meta=meta)
+    except AnalysisParseError:
+        retry_text = llm.call_text(
+            prompt + RETRY_SUFFIX, client=client, model_name=model, temperature=temperature
+        )
+        result = schema.parse_analysis(retry_text, meta={**meta, "retried": True})
+        return result
 
 
 def analyze_email(
     email: dict[str, Any],
     *,
     model_name: str | None = None,
+    prompt_id: str = DEFAULT_PROMPT_ID,
+    temperature: float = DEFAULT_TEMPERATURE,
+    client: Any = None,
 ) -> AnalysisResult:
-    """1通のメールを解析してAnalysisResultを返す。"""
-    client = _get_client()
-    model_name = model_name or os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-
-    prompt = PROMPT_TEMPLATE.format(
-        subject=email.get("subject", ""),
-        sender=email.get("sender", ""),
-        received_at=email.get("received_at", ""),
-        body=email.get("body", ""),
+    """旧APIの互換ラッパ（1通ずつ解析）。"""
+    return analyze(
+        email,
+        prompt_id=prompt_id,
+        model_name=model_name,
+        temperature=temperature,
+        client=client,
     )
-    response = client.models.generate_content(model=model_name, contents=prompt)
-    text = response.text or ""
-    payload = _extract_json(text)
 
-    return AnalysisResult(
-        urgency=float(payload.get("urgency", 0.0)),
-        dissatisfaction=float(payload.get("dissatisfaction", 0.0)),
-        tone_worsening=float(payload.get("toneWorsening", 0.0)),
-        priority=str(payload.get("priority", "中")),
-        summary=str(payload.get("summary", "")),
-        raw=text,
-    )
+
+def analyze_many(
+    targets: Sequence[thread_mod.Thread | dict[str, Any]],
+    *,
+    prompt_id: str = DEFAULT_PROMPT_ID,
+    model_name: str | None = None,
+    temperature: float = DEFAULT_TEMPERATURE,
+    client: Any = None,
+    max_workers: int = 4,
+    on_done: Callable[[int, int, str, Exception | None], None] | None = None,
+) -> dict[str, AnalysisResult]:
+    """複数を並列に解析し、`{target_key: AnalysisResult}` を返す。
+
+    失敗したものは結果に含めず、`on_done` に例外を渡す（呼び出し側で表示する）。
+    """
+    results: dict[str, AnalysisResult] = {}
+    total = len(targets)
+    if total == 0:
+        return results
+
+    with ThreadPoolExecutor(max_workers=max(1, min(max_workers, total))) as executor:
+        futures = {
+            executor.submit(
+                analyze,
+                target,
+                prompt_id=prompt_id,
+                model_name=model_name,
+                temperature=temperature,
+                client=client,
+            ): target
+            for target in targets
+        }
+        done = 0
+        for future in as_completed(futures):
+            target = futures[future]
+            key = thread_mod.target_key(target)
+            error: Exception | None = None
+            try:
+                results[key] = future.result()
+            except Exception as exc:  # UIに出すため握る
+                error = exc
+            done += 1
+            if on_done is not None:
+                on_done(done, total, key, error)
+    return results
