@@ -126,15 +126,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Gemini API キーを設定
+### 2. API キーを設定（Gemini / OpenAI のどちらでも動きます）
 
 ```bash
-export GEMINI_API_KEY="your_gemini_api_key"
+export GEMINI_API_KEY="your_gemini_api_key"     # 既定
+export OPENAI_API_KEY="your_openai_api_key"     # 任意（設定すると画面で切り替えられます）
+
 # 任意：モデルの上書き
 export GEMINI_MODEL="gemini-2.5-flash"
+export OPENAI_MODEL="gpt-4o-mini"
+# 任意：既定で使うAIを固定する（gemini / openai）
+export LLM_PROVIDER="gemini"
 ```
 
+両方設定すると、各画面のサイドバー「モデル設定」→「使うAI（プロバイダ）」で切り替えられます。
+キーが片方だけなら、その片方が自動的に使われます。
+
 > 開発用の API キーは `local_debug/secrets/gemini.md` を参照（gitignore済み）。
+> Streamlit Cloud では App settings → Secrets に `GEMINI_API_KEY = "..."` の形で設定します（環境変数としても読めます）。
 
 ### 3. 起動
 
@@ -175,9 +184,17 @@ python -m pytest tests -q
 LLM呼び出しはすべてフェイククライアントに差し替えているため、**APIキー無し・課金なし**で全件実行できます。
 画面については Streamlit の `AppTest` で、描画と「解析／生成／記録」ボタンの動作まで検証しています。
 
+## デプロイ（Streamlit Community Cloud）
+
+- 公開URL: https://st03-context-agent.streamlit.app/
+- **`main` ブランチに入った内容が自動で反映されます**（作業ブランチ → PR → main にマージ）。反映されないときは App settings の右上メニューから **Reboot app**。
+- APIキーは App settings → **Secrets**（TOML形式）。詳しい手順は `local_debug/003_ASK_プロンプト改善/005_CLAUDE_デプロイと諸々ガイド.md` を参照。
+- 画面の切り替えは**左サイドバーのページ一覧**、またはホーム画面のリンクボタンから。
+
 ## 既知の制限・今後
 
 - メール取得はモックJSONと `.eml` 取り込み。将来的に Microsoft Graph API への置き換えを想定。
 - 追加したメール・評価ログはブラウザのセッション内のみ（CSV/JSONでダウンロードして共有）。全員共有が必要になれば Google Sheets 1枚での永続化を検討。
+- 「⚙️ プロンプト管理」で保存した指示文は `app/prompts/user/` に置かれます。ローカルでは残りますが、**公開版では再起動で消えます**（Git管理外）。
 - Streamlit Cloud への公開は、APIキーの利用上限の扱いが決まってから（`local_debug/002_handson作る/002_COWK_公開前のKey発行とその他考慮事項について.md`）。
 - 「良い返信」の評価軸（意図伝達／関係性配慮／読みやすさ／過不足／そのまま送れるか）は暫定。ペア比較の理由を溜めて定義を作っていく前提。

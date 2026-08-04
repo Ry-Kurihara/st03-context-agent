@@ -159,6 +159,9 @@ def _load_user_specs() -> list[PromptSpec]:
         return []
     specs: list[PromptSpec] = []
     for item in raw:
+        # ファイルが無い（手で消した・コンテナが再作成された）エントリは無視する
+        if not (_USER_DIR / str(item.get("file", ""))).exists():
+            continue
         try:
             specs.append(
                 PromptSpec(

@@ -22,8 +22,9 @@ def fake_llm(monkeypatch):
     def install(responses: list[str]) -> FakeClient:
         client = FakeClient(responses)
         holder["client"] = client
-        monkeypatch.setattr(llm, "get_client", lambda: client)
+        monkeypatch.setattr(llm, "get_client", lambda provider=None: client)
         monkeypatch.setenv("GEMINI_API_KEY", "dummy-key-for-test")
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         return client
 
     return install

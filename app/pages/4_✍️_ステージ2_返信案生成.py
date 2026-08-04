@@ -104,8 +104,11 @@ if pid_a == pid_b:
     st.warning("A と B が同じプリセットです。比較のためには別の指示文を選ぶか、片方を書き換えてください。")
 
 st.divider()
-st.write(f"返信案 **2案**（API呼び出し2回）／ モデル `{ui.llm.default_model()}` ／ temperature `{ui.temperature()}`")
-st.caption("A/Bは同じモデル・同じ設定で実行します（差が指示文の差だけになるように）。")
+st.write(
+    f"返信案 **2案**（API呼び出し2回）／ {ui.provider_label()} "
+    f"`{ui.llm.default_model(ui.provider())}` ／ temperature `{ui.temperature()}`"
+)
+st.caption("A/Bは同じAI・同じモデル・同じ設定で実行します（差が指示文の差だけになるように）。")
 ui.caution_box()
 
 if st.button("✍️ 返信案A/Bを生成する", type="primary", key="stage2_run"):
@@ -123,6 +126,7 @@ if st.button("✍️ 返信案A/Bを生成する", type="primary", key="stage2_r
                 mail_text=mail_text,
                 parameters=parameters,
                 temperature=ui.temperature(),
+                provider=ui.provider(),
             )
         except Exception as exc:
             st.error(f"生成に失敗しました: {exc}")
@@ -139,6 +143,7 @@ if st.button("✍️ 返信案A/Bを生成する", type="primary", key="stage2_r
         "reply_b": res_b.text,
         "prompt_a": res_a.prompt,
         "prompt_b": res_b.prompt,
+        "provider": res_a.meta.get("provider", ""),
         "model": res_a.meta.get("model", ""),
         "temperature": res_a.meta.get("temperature"),
     }

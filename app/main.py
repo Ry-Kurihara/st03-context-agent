@@ -16,6 +16,7 @@ if str(APP_DIR) not in sys.path:
 import streamlit as st
 
 import datasets
+import llm
 import ui_common as ui
 from prompts import registry
 
@@ -27,14 +28,38 @@ def main() -> None:
         caption="サブテーマ3「文脈・意図の理解」／ステージ1：感情パラメータ化 → ステージ2：返信案生成",
     )
 
-    if not ui.api_key_ready():
+    usable = llm.available_providers()
+    if not usable:
         st.error(
-            "環境変数 `GEMINI_API_KEY` が設定されていません。\n\n"
-            "`export GEMINI_API_KEY=...` を実行してから `streamlit run app/main.py` を起動し直してください。\n"
+            "APIキーが設定されていません（`GEMINI_API_KEY` または `OPENAI_API_KEY`）。\n\n"
+            "- ローカル: `export GEMINI_API_KEY=...` を実行してから起動し直してください\n"
+            '- Streamlit Cloud: App settings → Secrets に `GEMINI_API_KEY = "..."` を追加してください\n\n'
             "（設定しなくても画面は開けますが、解析・返信案生成はできません）"
         )
     else:
-        st.success("APIキーは設定済みです。左のサイドバーから、上のページから順に進めてください。")
+        st.success(
+            "利用できるAI: "
+            + " / ".join(llm.PROVIDERS[p].label for p in usable)
+            + "　（切り替えは各画面のサイドバー「モデル設定」から）"
+        )
+
+    st.subheader("▶️ ここから始めます")
+    nav = [
+        ("pages/1_📥_メールデータ.py", "① メールデータを選ぶ", "📥"),
+        ("pages/2_🔍_ステージ1_感情分析.py", "② ステージ1：感情分析を実行する", "🔍"),
+        ("pages/4_✍️_ステージ2_返信案生成.py", "③ ステージ2：返信案A/Bを作る", "✍️"),
+        ("pages/5_🆚_ステージ2_返信案比較.py", "④ 返信案A/Bを比べて記録する", "🆚"),
+    ]
+    cols = st.columns(len(nav))
+    for col, (path, label, icon) in zip(cols, nav):
+        with col:
+            st.page_link(path, label=label, icon=icon, use_container_width=True)
+
+    with st.expander("そのほかの画面"):
+        st.page_link("pages/3_🆚_ステージ1_プロンプト比較.py", label="ステージ1：プロンプト比較", icon="🆚")
+        st.page_link("pages/6_🧑‍⚖️_答え合わせ.py", label="答え合わせ（人 vs AI ／ ペア比較の集計）", icon="🧑‍⚖️")
+        st.page_link("pages/7_⚙️_プロンプト管理.py", label="プロンプト管理（指示文を読む・保存する）", icon="⚙️")
+    st.caption("※ 画面の切り替えは、左のサイドバー上部の一覧からもできます（見えないときは左上の «» で開きます）。")
 
     st.markdown(
         """

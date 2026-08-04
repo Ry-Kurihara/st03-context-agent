@@ -31,6 +31,7 @@ K_AS_OF = "as_of"
 K_UNIT = "analysis_unit"
 K_PROMPT = "analysis_prompt_id"
 K_TEMPERATURE = "temperature"
+K_PROVIDER = "llm_provider"
 K_RESULTS = "stage1_results"
 K_CACHE = "stage1_cache"
 K_HISTORY = "stage1_history"
@@ -52,21 +53,41 @@ CAUTION = """
 # ページ共通
 # --------------------------------------------------------------------------
 def page_setup(title: str, icon: str = "📨", *, caption: str = "") -> None:
-    st.set_page_config(page_title=f"{title} | ST03", page_icon=icon, layout="wide")
+    st.set_page_config(
+        page_title=f"{title} | ST03",
+        page_icon=icon,
+        layout="wide",
+        # 画面が狭いとサイドバー（＝ページ切り替え）が隠れて迷うため、常に開いた状態で始める
+        initial_sidebar_state="expanded",
+    )
     st.title(f"{icon} {title}")
     if caption:
         st.caption(caption)
 
 
-def api_key_ready() -> bool:
-    return llm.has_api_key()
+def provider() -> str:
+    return st.session_state.get(K_PROVIDER) or llm.default_provider()
+
+
+def provider_label(pid: str | None = None) -> str:
+    try:
+        return llm.spec_of(pid or provider()).label
+    except llm.UnsupportedProviderError:
+        return str(pid)
+
+
+def api_key_ready(pid: str | None = None) -> bool:
+    return llm.has_key(pid or provider())
 
 
 def require_api_key() -> None:
-    if not api_key_ready():
+    pid = provider()
+    if not api_key_ready(pid):
+        spec = llm.spec_of(pid)
         st.error(
-            "環境変数 `GEMINI_API_KEY` が設定されていません。\n\n"
-            "ターミナルで `export GEMINI_API_KEY=...` を実行してから起動し直してください。"
+            f"{spec.label} のAPIキー（`{spec.key_env}`）が設定されていません。\n\n"
+            f"- ローカル: `export {spec.key_env}=...` を実行してから起動し直してください\n"
+            f"- Streamlit Cloud: App settings → Secrets に `{spec.key_env} = \"...\"` を追加してください"
         )
         st.stop()
 
@@ -203,14 +224,32 @@ def sidebar_settings(*, show_unit: bool = True, show_prompt: bool = True) -> Non
                 st.caption("基準日の既定は「データ内の最新受信日」です（サンプルは過去日付のため）。")
 
         with st.expander("モデル設定", expanded=False):
-            st.text_input("モデル", value=llm.default_model(), disabled=True, key="sb_model")
+            all_providers = list(llm.PROVIDERS)
+            usable = llm.available_providers()
+            current_provider = provider()
+            chosen_provider = st.selectbox(
+                "使うAI（プロバイダ）",
+                all_providers,
+                index=all_providers.index(current_provider) if current_provider in all_providers else 0,
+                format_func=lambda p: llm.PROVIDERS[p].label + ("" if p in usable else "（キー未設定）"),
+                key="sb_provider",
+                help="APIキーが設定されているものだけ使えます。両方あれば切り替えて比較できます。",
+            )
+            st.session_state[K_PROVIDER] = chosen_provider
+            st.text_input(
+                "モデル", value=llm.default_model(chosen_provider), disabled=True, key="sb_model",
+                help=f"`{llm.PROVIDERS[chosen_provider].model_env}` で上書きできます。",
+            )
             temp = st.slider(
                 "temperature", min_value=0.0, max_value=1.0, value=temperature(), step=0.1, key="sb_temp",
                 help="0.0 が既定。値を上げると出力が毎回変わりやすくなります。",
             )
             st.session_state[K_TEMPERATURE] = float(temp)
 
-        st.caption("🔑 APIキー: " + ("設定済み" if api_key_ready() else "未設定"))
+        st.caption(
+            "🔑 APIキー: "
+            + (", ".join(llm.PROVIDERS[p].label for p in llm.available_providers()) or "未設定")
+        )
 
 
 # --------------------------------------------------------------------------
@@ -235,12 +274,12 @@ def history_of(target_key: str) -> list[AnalysisResult]:
 def run_stage1(targets: Sequence[Any], *, force: bool = False) -> dict[str, AnalysisResult]:
     """選択された対象を解析する。同一条件のキャッシュがあれば再利用（二重課金の防止）。"""
     require_api_key()
-    pid, temp = prompt_id(), temperature()
+    pid, temp, prov = prompt_id(), temperature(), provider()
     cache = st.session_state.setdefault(K_CACHE, {})
 
     pending, reused = [], 0
     for target in targets:
-        key = analyzer.cache_key(target, prompt_id=pid, model_name=None, temperature=temp)
+        key = analyzer.cache_key(target, prompt_id=pid, model_name=None, temperature=temp, provider=prov)
         if not force and key in cache:
             st.session_state.setdefault(K_RESULTS, {})[thread_mod.target_key(target)] = cache[key]
             reused += 1
@@ -259,7 +298,7 @@ def run_stage1(targets: Sequence[Any], *, force: bool = False) -> dict[str, Anal
             progress.progress(done / total, text=f"解析中… ({done}/{total})")
 
         new_results = analyzer.analyze_many(
-            pending, prompt_id=pid, temperature=temp, on_done=on_done, max_workers=4
+            pending, prompt_id=pid, temperature=temp, provider=prov, on_done=on_done, max_workers=4
         )
         progress.empty()
         for target in pending:
@@ -267,15 +306,19 @@ def run_stage1(targets: Sequence[Any], *, force: bool = False) -> dict[str, Anal
             result = new_results.get(tkey)
             if result is None:
                 continue
-            _store(tkey, result, analyzer.cache_key(target, prompt_id=pid, model_name=None, temperature=temp))
+            _store(
+                tkey,
+                result,
+                analyzer.cache_key(target, prompt_id=pid, model_name=None, temperature=temp, provider=prov),
+            )
 
     return {thread_mod.target_key(t): results().get(thread_mod.target_key(t)) for t in targets}
 
 
 def confirm_note(targets: Sequence[Any]) -> None:
     st.write(
-        f"対象 **{len(targets)}件** ／ モデル `{llm.default_model()}` ／ temperature `{temperature()}` "
-        f"／ プロンプト `{prompt_id()}`"
+        f"対象 **{len(targets)}件** ／ {provider_label()} `{llm.default_model(provider())}` "
+        f"／ temperature `{temperature()}` ／ プロンプト `{prompt_id()}`"
     )
     if len(targets) > MAX_TARGETS_PER_RUN:
         st.warning(

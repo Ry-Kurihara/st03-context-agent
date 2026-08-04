@@ -72,17 +72,22 @@ def generate_reply(
     model_name: str | None = None,
     temperature: float = llm.DEFAULT_TEMPERATURE,
     label: str = "",
+    provider: str | None = None,
 ) -> ReplyResult:
     prompt = build_reply_prompt(template, mail_text=mail_text, parameters=parameters)
-    model = model_name or llm.default_model()
-    text = llm.call_text(prompt, client=client, model_name=model, temperature=temperature)
+    if provider is None:
+        provider = llm.infer_provider(client) if client is not None else llm.default_provider()
+    model = model_name or llm.default_model(provider)
+    text = llm.call_text(
+        prompt, client=client, provider=provider, model_name=model, temperature=temperature
+    )
     body = _strip_fence(text)
     if not body:
         raise ReplyGenerationError("返信案が空でした。もう一度実行してください。")
     return ReplyResult(
         text=body,
         prompt=prompt,
-        meta={"model": model, "temperature": temperature, "label": label},
+        meta={"provider": provider, "model": model, "temperature": temperature, "label": label},
     )
 
 
@@ -95,13 +100,17 @@ def generate_reply_pair(
     client: Any = None,
     model_name: str | None = None,
     temperature: float = llm.DEFAULT_TEMPERATURE,
+    provider: str | None = None,
 ) -> tuple[ReplyResult, ReplyResult]:
-    """A/Bを**同じモデル・同じ設定**で生成する（差が指示文の差だけになるように）。"""
-    model = model_name or llm.default_model()
+    """A/Bを**同じプロバイダ・同じモデル・同じ設定**で生成する（差が指示文の差だけになるように）。"""
+    if provider is None:
+        provider = llm.infer_provider(client) if client is not None else llm.default_provider()
+    model = model_name or llm.default_model(provider)
     common = {
         "mail_text": mail_text,
         "parameters": parameters,
         "client": client,
+        "provider": provider,
         "model_name": model,
         "temperature": temperature,
     }
