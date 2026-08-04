@@ -1,51 +1,62 @@
 # st03-context-agent
 
-サブテーマ3「文脈・意図の理解」プロトタイプ。  
-日本語ビジネスメールの **表面と裏のズレ**（丁寧な怒り／諦めの短文／感情の変化）を Gemini で解析し、優先度・感情スコアを Streamlit ダッシュボードで可視化します。
+サブテーマ3「文脈・意図の理解」プロトタイプ。
+日本語ビジネスメールの **表面と裏のズレ**（丁寧な怒り／諦めの短文／感情の変化）を Gemini で読み解き、
+**そのパラメータを使って返信案を作らせ、どちらの返し方が良いかを人が比較する** ところまでを1つのStreamlitアプリで回します。
+
+## 研究ステージとアプリの対応
+
+| 研究ステージ | やること | 画面 |
+| --- | --- | --- |
+| **ステージ1** 感情パラメータ化 | 受信メール（スレッド）を読み解き、7指標＋総合優先度＋判定の論拠を数値化・言語化する | 🔍 ステージ1_感情分析 |
+| ステージ1（改良） | 分析プロンプトA/Bを当てて、スコアとラベルの差を見る | 🆚 ステージ1_プロンプト比較 |
+| **ステージ2** 返信案生成 | ①パラメータ＋②メール本文（固定）に、③④返信の指示文（可変）を当てて返信案A/Bを作る | ✍️ ステージ2_返信案生成 |
+| ステージ2（評価） | A/Bを読み比べ、どちらが良いか＋理由を記録する（ペア比較） | 🆚 ステージ2_返信案比較 |
+| 答え合わせ | 人の感覚値とAIスコアのズレ／ペア比較の集計を見る | 🧑‍⚖️ 答え合わせ |
+
+> **返信文を書くのは人ではなくLLM。** 人がやるのは①②の材料をそろえて、③④の指示文を書き分けること。
+> 出てきた差＝指示文の差になります（案①感情言語化／案②共感の出し方／案③背景仮説は、返信生成プリセットとして同梱）。
 
 ## アーキテクチャ
 
-LangGraph エージェントや MCPサーバーは使わず、**Streamlit が UI とアプリロジックを兼ね、その先に Gemini API を 1段だけ呼ぶ** 「LLM完結型」のシンプルな構成です。
-選択された複数メールは `ThreadPoolExecutor`（最大4並列）で同時に Gemini に投げ、JSONで返ってきた評価結果を優先度順に色付けして表示します。
+LangGraph や MCPサーバーは使わず、**Streamlit が UI とアプリロジックを兼ね、その先に Gemini API を呼ぶ** シンプルな構成です。
+指示文（プロンプト）は Python に埋め込まず `app/prompts/*.md` に原文のまま置き、画面のプルダウンで差し替えます。
 
 ```mermaid
 flowchart LR
-    user["👤 ユーザー"]
-
-    subgraph browser["🖥 ブラウザ"]
-        ui["チャットUI<br>（Streamlit ダッシュボード）"]
+    subgraph input["📄 メールデータ"]
+        json_data["data/*.json<br>（同梱3種）"]
+        upload["画面から追加<br>（.eml / 貼り付け）"]
     end
 
-    subgraph app["⚙️ Streamlit アプリ (app/)"]
-        main["main.py<br>UI / メール選択 / 結果描画"]
-        analyzer["analyzer.py<br>プロンプト生成 + JSONパース"]
-        pool["🧵 ThreadPoolExecutor<br>（最大4並列）"]
+    subgraph app["⚙️ app/"]
+        loader["datasets / eml_loader<br>読み込み・正規化"]
+        th["thread.py<br>スレッド化＋直近1ヶ月"]
+        prm["prompts/<br>指示文（原文Markdown）"]
+        anz["analyzer.py<br>ステージ1"]
+        sch["schema.py<br>キー正規化・検証"]
+        sco["scoring.py<br>加重式（参考値）"]
+        rep["reply_generator.py<br>ステージ2"]
+        ev["evaluation.py<br>人の判断の記録・集計"]
+        ui["main.py + pages/<br>7画面"]
     end
 
-    subgraph data["📄 メールデータ"]
-        json_data["sample_emails.json<br>（モック20通）"]
-    end
+    gemini["🤖 Gemini API<br>(gemini-2.5-flash / temperature 0)"]
 
-    subgraph llm["🤖 LLM"]
-        gemini["Gemini API<br>(gemini-2.5-flash)"]
-    end
+    json_data --> loader
+    upload --> loader
+    loader --> th --> anz
+    prm --> anz
+    prm --> rep
+    anz <--> gemini
+    rep <--> gemini
+    anz --> sch --> sco --> ui
+    sch --> rep --> ui
+    ui --> ev
 
-    user -->|"メール選択 → 解析ボタン"| ui
-    ui --> main
-    main -->|"読み込み"| json_data
-    main -->|"選択メールを並列投入"| pool
-    pool -->|"1通ずつ"| analyzer
-    analyzer -->|"プロンプト"| gemini
-    gemini -->|"JSON応答"| analyzer
-    analyzer -->|"AnalysisResult"| main
-    main -->|"優先度で色付け表示"| ui
-    ui --> user
-
-    style llm fill:#fff4d0,stroke:#cc9944,color:#000
-    style gemini fill:#ffe8a8,stroke:#cc9944,color:#000
-    style browser fill:#f0f4ff,stroke:#aabbdd,color:#000
     style app fill:#f0fff4,stroke:#88cc99,color:#000
-    style data fill:#f4f4f4,stroke:#999,color:#000
+    style input fill:#f4f4f4,stroke:#999,color:#000
+    style gemini fill:#fff4d0,stroke:#cc9944,color:#000
 ```
 
 ## 構成
@@ -53,24 +64,55 @@ flowchart LR
 ```
 st03-context-agent/
 ├─ app/
-│  ├─ analyzer.py     # Gemini API 呼び出し + JSONパース
-│  └─ main.py         # Streamlit UI
-├─ data/
-│  └─ sample_emails.json   # モックメール 20通（シナリオ①②③を含む）
-├─ requirements.txt
-├─ README.md
-└─ local_debug/            # 検証用資料・レポート
+│  ├─ main.py                 # ホーム（使い方・データとプロンプトの一覧）
+│  ├─ pages/                  # 1_メールデータ 〜 7_プロンプト管理（7画面）
+│  ├─ analyzer.py             # ステージ1：解析実行（プロンプトID指定・再試行）
+│  ├─ reply_generator.py      # ステージ2：返信案生成（A/Bは同一設定）
+│  ├─ schema.py               # JSON抽出・日本語併記キーの正規化・AnalysisResult
+│  ├─ thread.py               # スレッド化・直近1ヶ月・LLM入力の整形
+│  ├─ scoring.py              # 加重式（参考値）・ラベル閾値・表示色
+│  ├─ evaluation.py           # 人の判断の記録・集計（MAE／勝率）
+│  ├─ datasets.py             # 同梱データセットの読み込み・正規化
+│  ├─ eml_loader.py           # .eml の読み込み（文字コード復元つき）
+│  ├─ llm.py                  # Gemini呼び出しの共通部
+│  ├─ ui_common.py            # 画面共通部品（セッション・ガード・表）
+│  └─ prompts/                # 指示文（Markdown・原文のまま）
+├─ data/                      # 同梱メールデータ（JSON）
+├─ scripts/convert_sources.py # xlsx / .eml → JSON 変換（開発用）
+├─ tests/                     # pytest（114件・API不要）
+├─ requirements.txt / requirements-dev.txt
+└─ local_debug/               # 検証用資料・レポート
 ```
 
-### 評価軸（Geminiに出力させるJSON）
+### 同梱メールデータ
+
+| データセット | 通数 | 内容 |
+| --- | --- | --- |
+| ① 赤木さんデモメール | 15 | 関係良好10通／関係険悪5通（吉田さん・廣瀬さん検証と同じもの） |
+| ② 混在感情メール | 50 | 丁寧だが婉曲な断り等（平井さんのIBMツールと同一の `.eml`） |
+| ③ モックメール v2 | 23 | TO/CC・署名の役職つき。**役職あり／なしの対照ペア**と承認要求メールを含む |
+| （旧）モックメール | 20 | 中間発表2時点のデータ（互換確認用） |
+
+`.eml` の追加・本文の貼り付けは「📥 メールデータ」画面から誰でもできます（セッション内。JSONでダウンロードして共有）。
+
+### 評価軸（ステージ1でGeminiに出力させるJSON）
+
+吉田さん最新指示文は「英単語＋（日本語）」のキーで返します。アプリ側は英語キーに正規化して扱います。
 
 | キー | 内容 |
 | --- | --- |
-| `urgency` | 緊急度 (0.0〜1.0) |
-| `dissatisfaction` | 不満度（裏にある不満・諦めも含む） |
-| `toneWorsening` | トーン悪化度（表面と本心のズレも含む） |
-| `priority` | `最優先` / `高` / `中` / `低` |
-| `summary` | 真意の読み解き要約（日本語） |
+| `urgency` / `demand` | 緊急度 / 要求度 |
+| `dissatisfaction` / `accumulatedDissatisfaction` | 不満度 / 蓄積された不満度 |
+| `toneWorsening` / `delayScore` / `troubleRisk` | トーン悪化 / 遅延 / トラブルリスク |
+| `priorityScore` / `priorityLabel` | 総合優先度（0.0〜1.0）／`最優先` `高` `中` `低` |
+| `summary` | スレッド全体の1行要約 |
+| `analysisReasoning` | 判定の論拠（緊急度／不満・トーン／遅延・リスク） |
+
+優先度の色： 🔴 最優先（0.75以上）／🟠 高（0.50以上）／🟡 中（0.30以上）／🔵 低（0.30未満）
+
+> **総合優先度は「AIの出力値」を採用値**とし、吉田さんレポートの加重式は**参考値**として併記します。
+> 指示文には「相談メールは一律0.5以上」等のルールがあり、加重式で上書きするとそのルールが消えるためです。
+> 両者の差は「どこで補正ルールが効いたか」を示す検証材料になります。
 
 ---
 
@@ -104,36 +146,38 @@ streamlit run app/main.py
 
 ---
 
-## 使い方
+## 使い方（上のページから順に）
 
-1. サイドバーの一覧から、解析したいメールを複数選択。
-2. **🚀 選択したメールを解析する** を押す。
-3. 優先度で色付けされた一覧と、メール毎の詳細（緊急度・不満度・トーン悪化・要約）が表示されます。
+1. **📥 メールデータ** … 使うサンプルを選ぶ（そのままでもOK）。`.eml` の追加や本文の貼り付けもここ。
+2. **🔍 ステージ1_感情分析** … スレッドを選んで解析 → 7指標・優先度・論拠が出ます。
+3. **✍️ ステージ2_返信案生成** … ステージ1の結果が自動で流し込まれます。返信の指示文A/Bを選んで生成。
+4. **🆚 ステージ2_返信案比較** … A/B（既定はブラインド）を読み比べ、勝ち・5軸スコア・理由を記録 → CSVでダウンロード。
+5. **🧑‍⚖️ 答え合わせ** … 人の感覚値とAIスコアのMAE・ラベル一致率、ペア比較の勝率を集計。
+6. **⚙️ プロンプト管理** … 指示文を読む／書き換えて自分用に保存（組み込みは上書きされません）。
 
-優先度の色：
+### APIコストと出力の揺れについて
 
-| 優先度 | 色 |
-| --- | --- |
-| 🔴 最優先 | 赤 |
-| 🟠 高 | オレンジ |
-| 🟡 中 | 黄 |
-| 🟢 低 | 緑 |
-
----
-
-## サンプルメールの内訳
-
-`data/sample_emails.json` には、検証プランのシナリオに沿って20通を収録：
-
-- **① 丁寧な怒り**（例: `mail-001`「前回も同様の説明を頂いており…」）
-- **② 諦めの短文**（例: `mail-002`「もう大丈夫です。」、`mail-020`「もう結構です」）
-- **③ 感情の変化スレッド**（`thread_id: T-E1` / `T-L1` の3通ずつ）
-- 通常のビジネスメール（依頼／障害連絡／資料送付など）
+- 生成AIの回答は同じ入力でも毎回少し変わります（0.05程度の差はよく起きます）。大事な判定は2〜3回実行して見比べてください。
+- 逆に、0.05程度の差を「プロンプト改良の効果」と結論づけないでください。
+- 1回の実行は **20件まで**。同じ条件（メール×指示文×モデル×temperature）の再実行はキャッシュを使い、APIを呼びません。
+  意図的に揺れを見たいときは「🔁 同じ条件でもう1回実行」を使います（履歴が並びます）。
 
 ---
+
+## テスト
+
+```bash
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m pytest tests -q
+```
+
+LLM呼び出しはすべてフェイククライアントに差し替えているため、**APIキー無し・課金なし**で全件実行できます。
+画面については Streamlit の `AppTest` で、描画と「解析／生成／記録」ボタンの動作まで検証しています。
 
 ## 既知の制限・今後
 
-- メール取得はモックJSON。将来的に Microsoft Graph API への置き換えを想定。
-- 解析は1通ずつ独立。スレッド全体を見る案B（LangGraph 等）への発展を予定。
-- API キーは環境変数のみ対応（Streamlit Secrets連携は未実装）。
+- メール取得はモックJSONと `.eml` 取り込み。将来的に Microsoft Graph API への置き換えを想定。
+- 追加したメール・評価ログはブラウザのセッション内のみ（CSV/JSONでダウンロードして共有）。全員共有が必要になれば Google Sheets 1枚での永続化を検討。
+- Streamlit Cloud への公開は、APIキーの利用上限の扱いが決まってから（`local_debug/002_handson作る/002_COWK_公開前のKey発行とその他考慮事項について.md`）。
+- 「良い返信」の評価軸（意図伝達／関係性配慮／読みやすさ／過不足／そのまま送れるか）は暫定。ペア比較の理由を溜めて定義を作っていく前提。

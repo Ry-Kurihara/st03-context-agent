@@ -44,10 +44,20 @@ def _token_values(target: thread_mod.Thread | dict[str, Any]) -> dict[str, str]:
     }
 
 
-def build_prompt(target: thread_mod.Thread | dict[str, Any], *, prompt_id: str) -> str:
-    """指示文にメール（スレッド）を差し込んだ、実際に送るプロンプト全文。"""
-    spec = registry.get_spec(prompt_id)
-    template = registry.load_prompt(prompt_id)
+def build_prompt(
+    target: thread_mod.Thread | dict[str, Any],
+    *,
+    prompt_id: str,
+    template: str | None = None,
+) -> str:
+    """指示文にメール（スレッド）を差し込んだ、実際に送るプロンプト全文。
+
+    `template` を渡すと、登録済み指示文の代わりにその文面を使う
+    （画面で貼り付けた指示文をそのまま試すため）。
+    """
+    if template is None:
+        registry.get_spec(prompt_id)
+        template = registry.load_prompt(prompt_id)
     return prompt_loader.render_available(template, _token_values(target))
 
 
@@ -57,12 +67,15 @@ def cache_key(
     prompt_id: str,
     model_name: str | None,
     temperature: float,
+    template: str | None = None,
 ) -> str:
     """同じ条件の再実行で二重課金しないためのキー。"""
+    if template is None:
+        template = registry.load_prompt(prompt_id) if _prompt_exists(prompt_id) else ""
     payload = {
         "input": thread_mod.target_text(target),
         "prompt_id": prompt_id,
-        "prompt": registry.load_prompt(prompt_id) if _prompt_exists(prompt_id) else "",
+        "prompt": template,
         "model": model_name or llm.default_model(),
         "temperature": temperature,
     }
@@ -85,10 +98,11 @@ def analyze(
     model_name: str | None = None,
     temperature: float = DEFAULT_TEMPERATURE,
     client: Any = None,
+    template: str | None = None,
 ) -> AnalysisResult:
     """1スレッド（または1通）を解析する。JSONが読めなければ1回だけ再試行する。"""
     spec = registry.get_spec(prompt_id)  # 未登録なら KeyError（API呼び出し前に落とす）
-    prompt = build_prompt(target, prompt_id=prompt_id)
+    prompt = build_prompt(target, prompt_id=prompt_id, template=template)
     model = model_name or llm.default_model()
     meta = {
         "prompt_id": prompt_id,
@@ -98,6 +112,7 @@ def analyze(
         "model": model,
         "temperature": temperature,
         "target_key": thread_mod.target_key(target),
+        "template_override": template is not None,
     }
 
     text = llm.call_text(prompt, client=client, model_name=model, temperature=temperature)
