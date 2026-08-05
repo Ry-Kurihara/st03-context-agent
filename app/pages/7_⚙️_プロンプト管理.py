@@ -20,6 +20,13 @@ st.info(
     "組み込みの指示文（吉田さん最新版など）は**上書きされません**。"
     "編集すると別名で保存され、各画面のプルダウンに追加されます。"
 )
+st.warning(
+    "**保存先について**　保存した指示文は `app/prompts/user/` にファイルとして置かれます。\n\n"
+    "- **ローカルで起動している場合**: ファイルはPCに残るので、アプリを再起動しても選べます（Gitには含めない設定です）。\n"
+    "- **公開版（Streamlit Cloud）の場合**: Streamlit社のサーバー上の一時的な置き場所です。"
+    "アプリが再起動・再デプロイされると**消えます**。また、同じURLを見ている人全員に見えます。\n\n"
+    "残したい指示文は、下の「⬇️ この指示文をダウンロード」で保存してSlackに投げてください（同梱版に取り込みます）。"
+)
 
 specs = registry.list_prompts()
 ids = [spec.id for spec in specs]
@@ -46,6 +53,14 @@ st.caption(
 )
 
 edited = st.text_area("指示文の本文", value=text, height=520, key=f"pm_text_{selected}")
+
+st.download_button(
+    "⬇️ この指示文をダウンロード（.md）",
+    data=edited,
+    file_name=f"{selected}.md",
+    mime="text/markdown",
+    help="編集中の内容がそのまま落ちます。共有・バックアップ用。",
+)
 
 st.divider()
 st.subheader("💾 自分用に保存する")

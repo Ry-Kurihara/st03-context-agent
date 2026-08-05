@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .streamlit/secrets.toml
 .env
+
+# アプリ画面から保存した個人用プロンプト（共有したいものは明示的に add する）
+app/prompts/user/

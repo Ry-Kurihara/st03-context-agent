@@ -67,7 +67,10 @@ with col_b:
     pid_b, template_b = _prompt_editor("B", 0)
 
 st.divider()
-st.write(f"対象 **1件** × プロンプト **2種** ＝ API呼び出し **2回** ／ temperature `{ui.temperature()}`")
+st.write(
+    f"対象 **1件** × プロンプト **2種** ＝ API呼び出し **2回** ／ {ui.provider_label()} "
+    f"／ temperature `{ui.temperature()}`"
+)
 ui.caution_box()
 
 if st.button("🚀 A/Bを実行して比較する", type="primary", key="cmp1_run"):
@@ -75,10 +78,18 @@ if st.button("🚀 A/Bを実行して比較する", type="primary", key="cmp1_ru
     with st.spinner("A/Bを実行中…"):
         try:
             res_a = analyzer.analyze(
-                target, prompt_id=pid_a, temperature=ui.temperature(), template=template_a
+                target,
+                prompt_id=pid_a,
+                temperature=ui.temperature(),
+                template=template_a,
+                provider=ui.provider(),
             )
             res_b = analyzer.analyze(
-                target, prompt_id=pid_b, temperature=ui.temperature(), template=template_b
+                target,
+                prompt_id=pid_b,
+                temperature=ui.temperature(),
+                template=template_b,
+                provider=ui.provider(),
             )
         except Exception as exc:
             st.error(f"実行に失敗しました: {exc}")

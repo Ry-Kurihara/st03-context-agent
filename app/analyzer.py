@@ -68,15 +68,18 @@ def cache_key(
     model_name: str | None,
     temperature: float,
     template: str | None = None,
+    provider: str | None = None,
 ) -> str:
     """同じ条件の再実行で二重課金しないためのキー。"""
     if template is None:
         template = registry.load_prompt(prompt_id) if _prompt_exists(prompt_id) else ""
+    provider = provider or llm.default_provider()
     payload = {
         "input": thread_mod.target_text(target),
         "prompt_id": prompt_id,
         "prompt": template,
-        "model": model_name or llm.default_model(),
+        "provider": provider,
+        "model": model_name or llm.default_model(provider),
         "temperature": temperature,
     }
     blob = json.dumps(payload, ensure_ascii=False, sort_keys=True)
@@ -99,31 +102,33 @@ def analyze(
     temperature: float = DEFAULT_TEMPERATURE,
     client: Any = None,
     template: str | None = None,
+    provider: str | None = None,
 ) -> AnalysisResult:
     """1スレッド（または1通）を解析する。JSONが読めなければ1回だけ再試行する。"""
     spec = registry.get_spec(prompt_id)  # 未登録なら KeyError（API呼び出し前に落とす）
     prompt = build_prompt(target, prompt_id=prompt_id, template=template)
-    model = model_name or llm.default_model()
+    if provider is None:
+        provider = llm.infer_provider(client) if client is not None else llm.default_provider()
+    model = model_name or llm.default_model(provider)
     meta = {
         "prompt_id": prompt_id,
         "prompt_label": spec.label,
         "schema_version": spec.schema_version,
         "input_unit": "thread" if isinstance(target, thread_mod.Thread) else "mail",
+        "provider": provider,
         "model": model,
         "temperature": temperature,
         "target_key": thread_mod.target_key(target),
         "template_override": template is not None,
     }
 
-    text = llm.call_text(prompt, client=client, model_name=model, temperature=temperature)
+    call = {"client": client, "provider": provider, "model_name": model, "temperature": temperature}
+    text = llm.call_text(prompt, **call)
     try:
         return schema.parse_analysis(text, meta=meta)
     except AnalysisParseError:
-        retry_text = llm.call_text(
-            prompt + RETRY_SUFFIX, client=client, model_name=model, temperature=temperature
-        )
-        result = schema.parse_analysis(retry_text, meta={**meta, "retried": True})
-        return result
+        retry_text = llm.call_text(prompt + RETRY_SUFFIX, **call)
+        return schema.parse_analysis(retry_text, meta={**meta, "retried": True})
 
 
 def analyze_email(
@@ -133,6 +138,7 @@ def analyze_email(
     prompt_id: str = DEFAULT_PROMPT_ID,
     temperature: float = DEFAULT_TEMPERATURE,
     client: Any = None,
+    provider: str | None = None,
 ) -> AnalysisResult:
     """旧APIの互換ラッパ（1通ずつ解析）。"""
     return analyze(
@@ -141,6 +147,7 @@ def analyze_email(
         model_name=model_name,
         temperature=temperature,
         client=client,
+        provider=provider,
     )
 
 
@@ -151,6 +158,7 @@ def analyze_many(
     model_name: str | None = None,
     temperature: float = DEFAULT_TEMPERATURE,
     client: Any = None,
+    provider: str | None = None,
     max_workers: int = 4,
     on_done: Callable[[int, int, str, Exception | None], None] | None = None,
 ) -> dict[str, AnalysisResult]:
@@ -172,6 +180,7 @@ def analyze_many(
                 model_name=model_name,
                 temperature=temperature,
                 client=client,
+                provider=provider,
             ): target
             for target in targets
         }
