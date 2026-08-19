@@ -119,6 +119,54 @@ def test_stage2_generates_reply_pair(fake_llm):
     assert "件名:" in client.calls[1]["contents"]
 
 
+def _stage2_area(at: AppTest, prefix: str) -> str:
+    """ステージ2の入力欄。キーは `<prefix>_<対象>_<ハッシュ>` なので前方一致で拾う。"""
+    hits = [t for t in at.text_area if (t.key or "").startswith(prefix)]
+    assert hits, f"入力欄が見つかりません: {prefix}（存在: {[t.key for t in at.text_area]}）"
+    return hits[0].value
+
+
+def _stage2_select(at: AppTest, needle: str) -> AppTest:
+    sel = [s for s in at.selectbox if s.key == "stage2_target"][0]
+    option = next(o for o in sel.options if needle in o)
+    return sel.select(option).run()
+
+
+def test_stage2_mail_body_follows_target_switch(fake_llm):
+    """対象を切り替えたら ②メール本文 も切り替わる（前の対象が残らない）。"""
+    fake_llm([])
+    at = AppTest.from_file(str(APP / "pages" / "4_✍️_ステージ2_返信案生成.py"), default_timeout=60)
+    at.session_state["dataset_id"] = "mixed_emotion_50"
+    at.run()
+    assert not at.exception, [str(e) for e in at.exception]
+    assert "混在感情_001" in _stage2_area(at, "stage2_mail")
+
+    at = _stage2_select(at, "混在感情_011")
+    body = _stage2_area(at, "stage2_mail")
+    assert "混在感情_011" in body
+    assert "混在感情_001" not in body
+
+
+def test_stage2_parameters_follow_target_switch(fake_llm):
+    """未解析→解析済みへ切り替えたとき ①パラメータ欄 が {} のまま残らない。"""
+    fake_llm([])
+    result = schema.parse_analysis(V3_RESPONSE)
+    at = AppTest.from_file(str(APP / "pages" / "4_✍️_ステージ2_返信案生成.py"), default_timeout=60)
+    at.session_state["dataset_id"] = "mixed_emotion_50"
+    at.session_state["stage1_results"] = {
+        "subj:ご提案へのフィードバック (混在感情_011)": result
+    }
+    at.run()
+    assert not at.exception, [str(e) for e in at.exception]
+    # 先頭（混在感情_001）は未解析なので空
+    assert _stage2_area(at, "stage2_params").strip() == "{}"
+
+    at = _stage2_select(at, "混在感情_011")
+    params = _stage2_area(at, "stage2_params")
+    assert params.strip() != "{}"
+    assert "priorityLabel" in params
+
+
 def test_stage2_pair_evaluation_is_recorded(fake_llm):
     fake_llm([])
     at = AppTest.from_file(str(APP / "pages" / "5_🆚_ステージ2_返信案比較.py"), default_timeout=60)

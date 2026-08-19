@@ -1,6 +1,7 @@
 """研究ステージ2：返信案の生成（パラメータ＋本文 → 返信案A/B）。"""
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -27,6 +28,20 @@ st.info(
     "**返信文を書くのはLLMです。** 人がやるのは、①②の材料をそろえて、③④の指示文を書き分けること。"
     "出てきた差＝指示文の差になります（案①〜③の検証はここで行います）。"
 )
+
+
+def seeded_key(prefix: str, target_key: str, seed: str) -> str:
+    """流し込む中身（seed）が変わったら別ウィジェットとして描き直すためのキー。
+
+    Streamlit は固定キーのウィジェットの値を session_state に保持し、
+    再描画時は `value=` を無視する。対象メールを切り替えても本文欄やパラメータ欄が
+    前の対象のまま残るのはこのため。キーに seed のハッシュを含めることで、
+    「流し込む内容が変わった＝別のウィジェット」として扱わせる。
+    seed が同じ間はキーも同じなので、利用者が手で編集した内容は保持される。
+    """
+    digest = hashlib.md5(seed.encode("utf-8")).hexdigest()[:10]
+    return f"{prefix}_{target_key}_{digest}"
+
 
 targets = ui.build_targets()
 if not targets:
@@ -57,14 +72,20 @@ else:
         reply_generator.parameters_from_result(result), ensure_ascii=False, indent=2
     )
 
-params_text = st.text_area("パラメータ（JSON。必要なら編集できます）", value=default_params, height=220, key="stage2_params")
+params_text = st.text_area(
+    "パラメータ（JSON。必要なら編集できます）",
+    value=default_params,
+    height=220,
+    key=seeded_key("stage2_params", target_key, default_params),
+)
 
 st.subheader("② メール本文（固定Input）")
+default_mail = thread_mod.target_text(target)
 mail_text = st.text_area(
     "AIに渡すメール（スレッド）本文",
-    value=thread_mod.target_text(target),
+    value=default_mail,
     height=240,
-    key="stage2_mail",
+    key=seeded_key("stage2_mail", target_key, default_mail),
 )
 
 st.divider()
