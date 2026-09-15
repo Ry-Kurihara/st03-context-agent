@@ -56,11 +56,14 @@ class FakeOpenAIClient:
 def _clear_keys(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
 
 
 def test_providers_are_registered():
-    assert set(llm.PROVIDERS) == {"gemini", "openai"}
+    assert set(llm.PROVIDERS) == {"gemini", "openai", "anthropic"}
+    assert llm.PROVIDERS["anthropic"].key_env == "ANTHROPIC_API_KEY"
     assert llm.PROVIDERS["gemini"].key_env == "GEMINI_API_KEY"
     assert llm.PROVIDERS["openai"].key_env == "OPENAI_API_KEY"
 
@@ -176,3 +179,102 @@ def test_missing_key_raises_with_clear_message(monkeypatch):
     with pytest.raises(llm.MissingApiKeyError) as exc:
         llm.get_client("openai")
     assert "OPENAI_API_KEY" in str(exc.value)
+
+
+# --------------------------------------------------------------------------
+# Anthropic（Claude）
+# --------------------------------------------------------------------------
+class _Block:
+    def __init__(self, type_: str, text: str = "") -> None:
+        self.type = type_
+        self.text = text
+
+
+class _FakeAnthropicResponse:
+    def __init__(self, texts: list[str], stop_reason: str = "end_turn") -> None:
+        self.content = [_Block("thinking")] + [_Block("text", t) for t in texts]
+        self.stop_reason = stop_reason
+
+
+class _FakeAnthropicMessages:
+    def __init__(self, owner: "FakeAnthropicClient") -> None:
+        self._owner = owner
+
+    def create(self, **kwargs):
+        self._owner.calls.append(kwargs)
+        if not self._owner.responses:
+            raise AssertionError("フェイククライアントの応答が足りません")
+        return self._owner.responses.pop(0)
+
+
+class _FakeAnthropicBeta:
+    def __init__(self, owner: "FakeAnthropicClient") -> None:
+        self.messages = _FakeAnthropicMessages(owner)
+
+
+class FakeAnthropicClient:
+    """anthropic SDK と同じ呼び出し方ができるテスト用スタブ。"""
+
+    def __init__(self, responses: list[_FakeAnthropicResponse]) -> None:
+        self.responses = list(responses)
+        self.calls: list[dict] = []
+        self.beta = _FakeAnthropicBeta(self)
+
+
+def test_anthropic_default_model_is_opus5_and_overridable(monkeypatch):
+    assert llm.default_model("anthropic") == "claude-opus-5"
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5")
+    assert llm.default_model("anthropic") == "claude-sonnet-5"
+
+
+def test_available_providers_includes_anthropic(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    assert llm.available_providers() == ["anthropic"]
+    assert llm.default_provider() == "anthropic"
+
+
+def test_call_text_with_anthropic_client_joins_text_blocks():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["こんにちは", "、世界"])])
+    text = llm.call_text("プロンプト", client=client, provider="anthropic", model_name="claude-opus-5", temperature=0.0)
+    assert text == "こんにちは、世界"
+    call = client.calls[0]
+    assert call["model"] == "claude-opus-5"
+    assert call["messages"] == [{"role": "user", "content": "プロンプト"}]
+    assert call["max_tokens"] >= 4000
+    # Opus 5 以降は temperature 等のサンプリング指定が 400 になるため送らない
+    assert "temperature" not in call
+    # 拒否時の自動フォールバック（サーバー側）を有効にしている
+    assert call["fallbacks"] == "default"
+    assert "server-side-fallback-2026-07-01" in call["betas"]
+
+
+def test_call_text_with_anthropic_non_opus_model_has_no_fallback():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["ok"])])
+    llm.call_text("x", client=client, provider="anthropic", model_name="claude-haiku-4-5")
+    assert "fallbacks" not in client.calls[0]
+
+
+def test_call_text_with_anthropic_refusal_raises():
+    client = FakeAnthropicClient([_FakeAnthropicResponse([], stop_reason="refusal")])
+    with pytest.raises(llm.LlmRefusalError):
+        llm.call_text("x", client=client, provider="anthropic", model_name="claude-opus-5")
+
+
+def test_call_text_infers_anthropic_from_client_shape():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["C"])])
+    assert llm.infer_provider(client) == "anthropic"
+    assert llm.call_text("x", client=client) == "C"
+
+
+def test_generate_reply_set_with_anthropic_provider():
+    client = FakeAnthropicClient([_FakeAnthropicResponse([t]) for t in ("1", "2", "3")])
+    results = reply_generator.generate_reply_set(
+        [("a", "A{{EMAIL}}"), ("b", "B{{EMAIL}}"), ("c", "C{{EMAIL}}")],
+        mail_text="本文",
+        parameters={},
+        client=client,
+        provider="anthropic",
+        max_workers=1,
+    )
+    assert [r.text for r in results] == ["1", "2", "3"]
+    assert {r.meta["model"] for r in results} == {"claude-opus-5"}

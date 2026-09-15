@@ -33,11 +33,29 @@ def test_page_renders_without_exception(path: Path, monkeypatch):
     assert not at.exception, f"{path.name} で例外: {[str(e) for e in at.exception]}"
 
 
-def test_all_seven_pages_exist():
+def test_pages_are_demo_first_and_research_last():
+    """受信トレイが先頭、研究用（比較・答え合わせ・プロンプト管理）は 9x_🔬 で末尾にまとまる。"""
     names = sorted(p.name for p in (APP / "pages").glob("*.py"))
-    assert len(names) == 7, names
-    assert names[0].startswith("1_")
-    assert names[-1].startswith("7_")
+    assert len(names) == 8, names
+    assert names[0] == "0_📬_受信トレイ.py"
+    research = [n for n in names if n.startswith("9")]
+    assert research == [
+        "91_🔬_研究_ステージ1プロンプト比較.py",
+        "92_🔬_研究_返信案ペア比較.py",
+        "93_🔬_研究_答え合わせ.py",
+        "94_🔬_研究_プロンプト管理.py",
+    ]
+    assert names[-len(research):] == research
+
+
+def test_main_page_links_point_to_existing_files():
+    import re
+
+    source = (APP / "main.py").read_text(encoding="utf-8")
+    links = re.findall(r'"(pages/[^"]+\.py)"', source)
+    assert "pages/0_📬_受信トレイ.py" in links
+    for link in links:
+        assert (APP / link).exists(), link
 
 
 def test_stage1_page_renders_with_api_key(monkeypatch):

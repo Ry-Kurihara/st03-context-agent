@@ -169,7 +169,7 @@ def test_stage2_parameters_follow_target_switch(fake_llm):
 
 def test_stage2_pair_evaluation_is_recorded(fake_llm):
     fake_llm([])
-    at = AppTest.from_file(str(APP / "pages" / "5_🆚_ステージ2_返信案比較.py"), default_timeout=60)
+    at = AppTest.from_file(str(APP / "pages" / "92_🔬_研究_返信案ペア比較.py"), default_timeout=60)
     at.session_state["stage2_state"] = {
         "target_key": "T-1",
         "target_label": "[T-1] テスト",
@@ -204,7 +204,7 @@ def test_stage2_pair_evaluation_is_recorded(fake_llm):
 def test_answer_check_page_opens_with_results(fake_llm):
     fake_llm([])
     result = schema.parse_analysis(V3_RESPONSE, meta={"prompt_id": "analysis_v3_yoshida_20260729"})
-    at = AppTest.from_file(str(APP / "pages" / "6_🧑‍⚖️_答え合わせ.py"), default_timeout=60)
+    at = AppTest.from_file(str(APP / "pages" / "93_🔬_研究_答え合わせ.py"), default_timeout=60)
     at.session_state["stage1_results"] = {"T-1": result}
     at.run()
     assert not at.exception
