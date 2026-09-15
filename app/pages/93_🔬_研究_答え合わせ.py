@@ -165,7 +165,7 @@ with tab2:
         st.rerun()
 
     if not log2:
-        st.info("まだペア比較の記録がありません（「🆚 ステージ2_返信案比較」で記録します）。")
+        st.info("まだペア比較の記録がありません（「🔬 研究_返信案ペア比較」で記録します）。")
     else:
         summary = evaluation.summarize_pairs(log2)
         c1, c2 = st.columns(2)

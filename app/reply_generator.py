@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Sequence
 
 import llm
 import prompt_loader
@@ -117,3 +118,43 @@ def generate_reply_pair(
     res_a = generate_reply(template_a, label="A", **common)
     res_b = generate_reply(template_b, label="B", **common)
     return res_a, res_b
+
+
+def generate_reply_set(
+    templates: Sequence[tuple[str, str]],
+    *,
+    mail_text: str,
+    parameters: Any,
+    client: Any = None,
+    model_name: str | None = None,
+    temperature: float = llm.DEFAULT_TEMPERATURE,
+    provider: str | None = None,
+    max_workers: int = 3,
+) -> list[ReplyResult]:
+    """`generate_reply_pair` の n 案版。`templates` は (表示ラベル, 指示文) の並び。
+
+    全案を**同じプロバイダ・同じモデル・同じ設定**で生成し、入力と同じ順で返す。
+    `max_workers` > 1 なら並列に呼ぶ（受信トレイでの待ち時間を短くするため）。
+    """
+    if not templates:
+        raise ValueError("返信の指示文が1つもありません")
+    if provider is None:
+        provider = llm.infer_provider(client) if client is not None else llm.default_provider()
+    model = model_name or llm.default_model(provider)
+    common = {
+        "mail_text": mail_text,
+        "parameters": parameters,
+        "client": client,
+        "provider": provider,
+        "model_name": model,
+        "temperature": temperature,
+    }
+
+    def _one(item: tuple[str, str]) -> ReplyResult:
+        label, template = item
+        return generate_reply(template, label=label, **common)
+
+    if max_workers <= 1:
+        return [_one(item) for item in templates]
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(templates))) as pool:
+        return list(pool.map(_one, templates))

@@ -191,4 +191,4 @@ with col_rb:
     with st.expander("送信したプロンプト全文（B）"):
         st.code(state["prompt_b"], language="text")
 
-st.success("次は「🆚 ステージ2_返信案比較」で、A/Bを読み比べて評価を記録してください。")
+st.success("次は「🔬 研究_返信案ペア比較」で、A/Bを読み比べて評価を記録してください。")

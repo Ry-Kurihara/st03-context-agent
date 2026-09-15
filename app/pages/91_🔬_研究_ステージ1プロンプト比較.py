@@ -55,7 +55,7 @@ def _prompt_editor(side: str, default_index: int) -> tuple[str, str | None]:
             value=registry.load_prompt(pid),
             height=300,
             key=f"cmp1_text_{side}",
-            help="`{{EMAIL_THREAD}}`（スレッド全文）を残してください。ここでの変更は保存されません（保存は「⚙️ プロンプト管理」）。",
+            help="`{{EMAIL_THREAD}}`（スレッド全文）を残してください。ここでの変更は保存されません（保存は「🔬 研究_プロンプト管理」）。",
         )
     return pid, template
 

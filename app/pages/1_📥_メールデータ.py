@@ -13,6 +13,7 @@ import streamlit as st
 
 import datasets
 import eml_loader
+import mail_fetch
 import thread as thread_mod
 import ui_common as ui
 
@@ -101,7 +102,50 @@ st.caption(
     "全員で共有したい場合は、上の「JSONでダウンロード」で保存してSlackに投げてください（次回から同梱します）。"
 )
 
-tab_eml, tab_form = st.tabs([".eml ファイルを読み込む", "本文を貼り付ける"])
+tab_imap, tab_eml, tab_form = st.tabs(["📮 個人のメールアカウントから取り込む（IMAP）", ".eml ファイルを読み込む", "本文を貼り付ける"])
+
+with tab_imap:
+    st.caption(
+        "個人のメールアカウント（Gmail / Outlook.com）の受信トレイから、新しい順にメールを読み取ります。"
+        "**読み取り専用**で開くため、既読が付いたりメールが変更されたりすることはありません。"
+        "パスワードは保存しません。"
+    )
+    st.warning(
+        "社内のメールアカウントは使わないでください（社内規定・個人情報の観点）。"
+        "取り込んだ内容は、解析・返信案作成のときに選択中のAI（Gemini / OpenAI / Claude）へ送信されます。"
+    )
+    with st.form("imap_fetch", clear_on_submit=True):
+        preset_labels = [preset.label for preset in mail_fetch.PRESETS] + ["その他（ホストを入力）"]
+        c1, c2 = st.columns(2)
+        preset_label = c1.selectbox("サービス", preset_labels)
+        custom_host = c2.text_input("IMAPホスト（その他の場合）", placeholder="imap.example.com")
+        c3, c4 = st.columns(2)
+        imap_user = c3.text_input("メールアドレス")
+        imap_password = c4.text_input("アプリパスワード", type="password", help="通常のログインパスワードではなく、アカウント設定で発行する「アプリパスワード」です。")
+        imap_limit = st.slider("取り込む件数（新しい順）", 1, mail_fetch.MAX_FETCH, mail_fetch.DEFAULT_LIMIT)
+        for preset in mail_fetch.PRESETS:
+            st.caption(f"{preset.label}: {preset.help}")
+        fetch_clicked = st.form_submit_button("📮 取り込む")
+    if fetch_clicked:
+        host = next((p.host for p in mail_fetch.PRESETS if p.label == preset_label), custom_host.strip())
+        if not (host and imap_user and imap_password):
+            st.error("ホスト・メールアドレス・アプリパスワードを入力してください。")
+        else:
+            with st.spinner(f"{host} から取り込み中…"):
+                try:
+                    fetched = mail_fetch.fetch_recent(host, imap_user, imap_password, limit=imap_limit)
+                except mail_fetch.MailFetchError as exc:
+                    st.error(str(exc))
+                    fetched = None
+            if fetched is not None:
+                if fetched:
+                    st.session_state[ui.K_EXTRA] = ui.extra_mails() + datasets.normalize_all(fetched, prefix="imap")
+                    st.success(
+                        f"{len(fetched)}通を取り込みました。「📬 受信トレイ」のメールボックスで「📥 取り込んだメール」を選ぶと表示されます。"
+                    )
+                else:
+                    st.info("受信トレイにメールがありませんでした。")
+
 
 with tab_eml:
     uploaded = st.file_uploader(".eml ファイル（複数選択できます）", type=["eml"], accept_multiple_files=True)

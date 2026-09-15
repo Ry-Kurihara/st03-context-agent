@@ -52,13 +52,14 @@ CAUTION = """
 # --------------------------------------------------------------------------
 # ページ共通
 # --------------------------------------------------------------------------
-def page_setup(title: str, icon: str = "📨", *, caption: str = "") -> None:
+def page_setup(title: str, icon: str = "📨", *, caption: str = "", sidebar: str = "expanded") -> None:
     st.set_page_config(
         page_title=f"{title} | ST03",
         page_icon=icon,
         layout="wide",
-        # 画面が狭いとサイドバー（＝ページ切り替え）が隠れて迷うため、常に開いた状態で始める
-        initial_sidebar_state="expanded",
+        # 画面が狭いとサイドバー（＝ページ切り替え）が隠れて迷うため、既定は開いた状態で始める。
+        # 受信トレイ（デモ）だけは collapsed にして、研究用ページの一覧を映さない。
+        initial_sidebar_state=sidebar,
     )
     st.title(f"{icon} {title}")
     if caption:
@@ -443,3 +444,71 @@ def render_history(target_key: str) -> None:
             row[scoring.SCORE_LABELS_JA[key]] = item.scores.get(key)
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+
+# --------------------------------------------------------------------------
+# 受信トレイ（デモ）
+# --------------------------------------------------------------------------
+UNANALYZED_LABEL = "⚪ 未解析"
+
+
+def sender_display(target: Any) -> str:
+    """一覧に出す差出人。署名（会社・部署・役職・氏名）があればそれを優先する。
+
+    署名の役職で優先度が変わる（役職補正）ことを一覧で見せるため、メールアドレスより署名を出す。
+    """
+    mail = target.last_mail if isinstance(target, thread_mod.Thread) else target
+    signature = str(mail.get("signature") or "")
+    lines = [line.strip() for line in signature.splitlines() if line.strip() and "@" not in line]
+    if lines:
+        return " ".join(lines)
+    return str(mail.get("sender") or "")
+
+
+def inbox_table(targets: Sequence[Any], found: dict[str, AnalysisResult]) -> pd.DataFrame:
+    """受信トレイの一覧。解析済みは優先度順、未解析はその後ろに受信順で並べる。
+
+    `_key`（対象キー）と `_bg`（行の背景色）は表示しない補助列。
+    """
+    rows = []
+    for order, target in enumerate(targets):
+        key = thread_mod.target_key(target)
+        result = found.get(key)
+        subject = target.subject if isinstance(target, thread_mod.Thread) else target.get("subject", "")
+        if isinstance(target, thread_mod.Thread) and target.count > 1:
+            subject = f"{subject}（{target.count}通）"
+        if result is None:
+            label, score, summary = UNANALYZED_LABEL, None, ""
+            rank, bg = len(scoring.LABEL_THRESHOLDS) + 1, "#ffffff"
+        else:
+            icon, bg = scoring.priority_style(result.priority_label)
+            label, score, summary = f"{icon} {result.priority_label}", result.priority_score, result.summary
+            rank = scoring.label_rank(result.priority_label)
+        rows.append(
+            {
+                "優先度": label,
+                "件名": subject,
+                "差出人（署名）": sender_display(target),
+                "総合": score,
+                "AIの要約": summary,
+                "_key": key,
+                "_bg": bg,
+                "_rank": rank,
+                "_order": order,
+            }
+        )
+    df = pd.DataFrame(
+        rows, columns=["優先度", "件名", "差出人（署名）", "総合", "AIの要約", "_key", "_bg", "_rank", "_order"]
+    )
+    if df.empty:
+        return df
+    df["_score"] = df["総合"].fillna(-1.0)
+    df = df.sort_values(by=["_rank", "_score", "_order"], ascending=[True, False, True])
+    return df.drop(columns=["_rank", "_order", "_score"]).reset_index(drop=True)
+
+
+def style_inbox(df: pd.DataFrame):
+    def _color(row: pd.Series) -> list[str]:
+        return [f"background-color: {row.get('_bg', '#ffffff')}; color: #222222"] * len(row)
+
+    return df.style.apply(_color, axis=1)

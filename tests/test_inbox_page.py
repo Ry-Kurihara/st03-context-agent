@@ -71,7 +71,7 @@ def test_inbox_analyze_all_then_generate_three_replies(fake_llm):
     sent = "\n".join(c["contents"] for c in client.calls[19:])
     assert "避ける表現" in sent
     assert "相手の感情や心情を直接言語化しない" in sent
-    assert at.tabs, "返信3択のタブが描画されていません"
+    assert len(at.code) >= 3, "返信3案が描画されていません"
 
 
 def test_inbox_selected_thread_can_be_set_from_session(fake_llm):
