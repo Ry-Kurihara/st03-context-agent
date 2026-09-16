@@ -148,7 +148,10 @@ def test_cleanup_moves_seeded_mails_to_trash():
     removed = seed.cleanup(imap)
     assert removed == 2
     assert imap.searched and "HEADER" in " ".join(str(a) for a in imap.searched[0])
-    assert any(c[0] == "uid" and c[1] == "STORE" and "\\\\Trash" in str(c) for c in imap.commands)
+    store = [c for c in imap.commands if c[0] == "uid" and c[1] == "STORE"]
+    assert store, "STOREが呼ばれていない"
+    # IMAPに渡すのは `(\\Trash)`（バックスラッシュ1本）。2本にするとGmailが受け付けない
+    assert store[0][4] == "(\\Trash)", store[0]
 
 
 def test_cleanup_with_nothing_to_remove():
