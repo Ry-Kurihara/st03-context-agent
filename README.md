@@ -160,7 +160,14 @@ ANTHROPIC_API_KEY = "your_anthropic_api_key"
 # GEMINI_MODEL = "gemini-2.5-flash"
 # OPENAI_MODEL = "gpt-4o-mini"
 # ANTHROPIC_MODEL = "claude-opus-5"   # 既定。例: "claude-sonnet-5"
+
+# 任意：接続先の差し替え（社内ゲートウェイ経由で使う場合）
+# OPENAI_BASE_URL = "https://<gateway>/v1"
+# ANTHROPIC_BASE_URL = "https://<gateway>"   # Anthropic SDK が /v1/messages を足すので /v1 は付けない
 ```
+
+接続先を差し替えた場合は、**そのゲートウェイで使えるモデル名**を `*_MODEL` で指定してください（公式の既定モデル名は通りません）。
+ゲートウェイ経由のときは beta パラメータ（拒否時の `fallbacks`）を送りません。受信トレイの上部に接続先が表示されます。
 
 環境変数なら `export GEMINI_API_KEY="..."` のように同じ名前で設定します（`LLM_PROVIDER=gemini|openai|anthropic` で既定のAIを固定可）。
 複数設定すると、受信トレイ上部の「使うAI」や各画面のサイドバー「モデル設定」で切り替えられます。

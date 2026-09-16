@@ -94,7 +94,11 @@ pending = [t for t in targets if thread_mod.target_key(t) not in found]
 
 with col_status:
     st.markdown(f"**{len(targets)}件**のスレッド ／ 解析済み **{len(found)}件**")
-    st.caption(f"{llm.PROVIDERS[chosen_provider].label} `{llm.default_model(chosen_provider)}`")
+    gateway = llm.base_url(chosen_provider)
+    st.caption(
+        f"{llm.PROVIDERS[chosen_provider].label} `{llm.default_model(chosen_provider)}`"
+        + (f" 経由 `{gateway}`" if gateway else "")
+    )
 
 if not ui.api_key_ready(chosen_provider):
     spec = llm.spec_of(chosen_provider)

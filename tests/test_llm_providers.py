@@ -58,6 +58,8 @@ def _clear_keys(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
+    for name in ("OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
 
 
@@ -278,3 +280,46 @@ def test_generate_reply_set_with_anthropic_provider():
     )
     assert [r.text for r in results] == ["1", "2", "3"]
     assert {r.meta["model"] for r in results} == {"claude-opus-5"}
+
+
+# --------------------------------------------------------------------------
+# 接続先の差し替え（社内ゲートウェイ経由で使う場合）
+# --------------------------------------------------------------------------
+def test_client_options_without_base_url(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    assert llm.client_options("anthropic") == {"api_key": "dummy"}
+
+
+def test_client_options_with_base_url(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    assert llm.client_options("anthropic") == {
+        "api_key": "dummy",
+        "base_url": "https://gateway.example.com",
+    }
+
+
+def test_client_options_for_openai_base_url(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-dummy")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example.com/v1")
+    assert llm.client_options("openai")["base_url"] == "https://gateway.example.com/v1"
+
+
+def test_client_options_requires_key(monkeypatch):
+    with pytest.raises(llm.MissingApiKeyError):
+        llm.client_options("anthropic")
+
+
+def test_base_url_is_reported_for_display(monkeypatch):
+    assert llm.base_url("anthropic") is None
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    assert llm.base_url("anthropic") == "https://gateway.example.com"
+
+
+def test_anthropic_skips_beta_params_when_gateway_is_used(monkeypatch):
+    """社内ゲートウェイ経由のときは beta パラメータを送らない（未対応で400になり得るため）。"""
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["ok"])])
+    llm.call_text("x", client=client, provider="anthropic", model_name="claude-opus-5")
+    assert "fallbacks" not in client.calls[0]
+    assert "betas" not in client.calls[0]
