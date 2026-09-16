@@ -40,6 +40,8 @@ K_PAIR_LOG = "pair_log"
 K_STAGE1_LOG = "stage1_log"
 
 DEFAULT_DATASET = "sample_v2"
+# 受信トレイの「📥 取り込んだメール」を表す擬似データセットID
+EXTRA_MAILBOX = "__extra__"
 
 CAUTION = """
 ⚠️ **生成AIの回答は、同じ入力でも実行するたびに少し変わります**（0.05程度のスコア差はよく起きます）。
@@ -115,6 +117,21 @@ def get_mails() -> list[dict[str, Any]]:
     except (KeyError, FileNotFoundError):
         base = datasets.load_dataset(DEFAULT_DATASET)
     return datasets.merge_datasets(base, extra_mails())
+
+
+def mailbox_mails(mailbox_id: str) -> list[dict[str, Any]]:
+    """メールボックス1つぶんのメール。
+
+    受信トレイでは「同梱サンプル」と「取り込んだメール」を**混ぜない**。
+    混ぜると、受信日の新しい取り込みメールが基準日になり、
+    期間フィルタ（直近1ヶ月）でサンプル側が全部落ちてしまう。
+    """
+    if mailbox_id == EXTRA_MAILBOX:
+        return extra_mails()
+    try:
+        return datasets.load_dataset(mailbox_id)
+    except (KeyError, FileNotFoundError):
+        return datasets.load_dataset(DEFAULT_DATASET)
 
 
 def window_days() -> int | None:

@@ -114,18 +114,32 @@ with tab_imap:
         "社内のメールアカウントは使わないでください（社内規定・個人情報の観点）。"
         "取り込んだ内容は、解析・返信案作成のときに選択中のAI（Gemini / OpenAI / Claude）へ送信されます。"
     )
-    with st.form("imap_fetch", clear_on_submit=True):
+    # 取り込み成功後は、次の描画でアプリパスワードだけ空にする（宛先・件数は残す）
+    if st.session_state.pop("imap_clear_password", False):
+        st.session_state["imap_password"] = ""
+    message = st.session_state.pop("imap_message", None)
+    if message:
+        (st.success if message[0] == "success" else st.info)(message[1])
+
+    with st.form("imap_fetch"):
         preset_labels = [preset.label for preset in mail_fetch.PRESETS] + ["その他（ホストを入力）"]
         c1, c2 = st.columns(2)
-        preset_label = c1.selectbox("サービス", preset_labels)
-        custom_host = c2.text_input("IMAPホスト（その他の場合）", placeholder="imap.example.com")
+        preset_label = c1.selectbox("サービス", preset_labels, key="imap_service")
+        custom_host = c2.text_input("IMAPホスト（その他の場合）", placeholder="imap.example.com", key="imap_host")
         c3, c4 = st.columns(2)
-        imap_user = c3.text_input("メールアドレス")
-        imap_password = c4.text_input("アプリパスワード", type="password", help="通常のログインパスワードではなく、アカウント設定で発行する「アプリパスワード」です。")
-        imap_limit = st.slider("取り込む件数（新しい順）", 1, mail_fetch.MAX_FETCH, mail_fetch.DEFAULT_LIMIT)
+        imap_user = c3.text_input("メールアドレス", key="imap_user")
+        imap_password = c4.text_input(
+            "アプリパスワード",
+            type="password",
+            key="imap_password",
+            help="通常のログインパスワードではなく、アカウント設定で発行する「アプリパスワード」です。取り込みに成功すると消えます。",
+        )
+        imap_limit = st.slider(
+            "取り込む件数（新しい順）", 1, mail_fetch.MAX_FETCH, mail_fetch.DEFAULT_LIMIT, key="imap_limit"
+        )
         for preset in mail_fetch.PRESETS:
             st.caption(f"{preset.label}: {preset.help}")
-        fetch_clicked = st.form_submit_button("📮 取り込む")
+        fetch_clicked = st.form_submit_button("📮 取り込む", key="imap_submit")
     if fetch_clicked:
         host = next((p.host for p in mail_fetch.PRESETS if p.label == preset_label), custom_host.strip())
         if not (host and imap_user and imap_password):
@@ -138,13 +152,18 @@ with tab_imap:
                     st.error(str(exc))
                     fetched = None
             if fetched is not None:
+                # 成功（0通でも接続はできている）のでパスワードだけ伏せる。入力し直さずに続けて取り込める
+                st.session_state["imap_clear_password"] = True
                 if fetched:
                     st.session_state[ui.K_EXTRA] = ui.extra_mails() + datasets.normalize_all(fetched, prefix="imap")
-                    st.success(
-                        f"{len(fetched)}通を取り込みました。「📬 受信トレイ」のメールボックスで「📥 取り込んだメール」を選ぶと表示されます。"
+                    st.session_state["imap_message"] = (
+                        "success",
+                        f"{len(fetched)}通を取り込みました。"
+                        "「📬 受信トレイ」のメールボックスで「📥 取り込んだメール」を選ぶと表示されます。",
                     )
                 else:
-                    st.info("受信トレイにメールがありませんでした。")
+                    st.session_state["imap_message"] = ("info", "受信トレイにメールがありませんでした。")
+                st.rerun()  # パスワード欄を空にするため（ウィジェットの値は次の描画でしか変えられない）
 
 
 with tab_eml:

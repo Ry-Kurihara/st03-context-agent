@@ -28,7 +28,7 @@ from prompts import registry
 PANE_HEIGHT = 600  # 一覧の最大高さ（px）。画面収録で1画面に収まる高さ
 K_SELECTED = "inbox_selected"
 K_REPLIES = "inbox_replies"
-EXTRA_DATASET = "__extra__"
+EXTRA_DATASET = ui.EXTRA_MAILBOX
 
 ui.page_setup(
     "受信トレイ",
@@ -82,11 +82,11 @@ with col_ai:
     )
     st.session_state[ui.K_PROVIDER] = chosen_provider
 
-if chosen_dataset == EXTRA_DATASET:
-    # 実メールは日付が新しいので、サンプルと混ぜると期間フィルタで片方が消える。取り込んだ分だけで見る。
-    targets = ui.build_targets(ui.extra_mails())
-else:
-    targets = ui.build_targets()
+# メールボックスは1つずつ独立して見る（サンプルと取り込み分を混ぜない）
+targets = ui.build_targets(ui.mailbox_mails(chosen_dataset))
+st.session_state["inbox_subjects"] = [
+    t.subject if isinstance(t, thread_mod.Thread) else t.get("subject", "") for t in targets
+]
 
 found = {thread_mod.target_key(t): ui.results().get(thread_mod.target_key(t)) for t in targets}
 found = {k: v for k, v in found.items() if v is not None}
