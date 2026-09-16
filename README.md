@@ -169,6 +169,31 @@ ANTHROPIC_API_KEY = "your_anthropic_api_key"
 接続先を差し替えた場合は、**そのゲートウェイで使えるモデル名**を `*_MODEL` で指定してください（公式の既定モデル名は通りません）。
 ゲートウェイ経由のときは beta パラメータ（拒否時の `fallbacks`）を送りません。受信トレイの上部に接続先が表示されます。
 
+<details>
+<summary>社内ゲートウェイ（IBM Consulting Advantage）経由で使う場合の設定例</summary>
+
+ICAの API Keys 画面 → **Coding Agents** のキー（`claude-code` / `open-code` など）を使います。
+1つのプロキシで Claude・GPT・Gemini などが配られており、**どちらの形式でも同じモデル群**が使えます。
+
+```toml
+# Anthropic形式（/v1/messages）。SDKが /v1 を足すので base_url に /v1 は付けない
+ANTHROPIC_API_KEY = "coding_agents_claude_code_key"
+ANTHROPIC_BASE_URL = "https://api.servicesessentials.ibm.com"
+ANTHROPIC_MODEL = "claude-sonnet-5"
+
+# OpenAI形式（/v1/chat/completions）。こちらは /v1 まで付ける
+OPENAI_API_KEY = "coding_agents_open_code_key"
+OPENAI_BASE_URL = "https://api.servicesessentials.ibm.com/v1"
+OPENAI_MODEL = "gpt-5.1"
+```
+
+使えるモデル名の一覧は `GET {base_url}/v1/models`（`Authorization: Bearer <key>`）で取得できます。
+2026-09 時点では claude-opus-5 / claude-sonnet-5 / claude-opus-4-8 / gpt-5.1 / gpt-5.4 / gpt-5.6系 /
+gemini-3.7-flash / gemini-3.6-flash / llama / mistral / granite など21種。
+**公式の既定モデル名がそのまま通るとは限らない**ので、必ず一覧で確認してください。
+
+</details>
+
 環境変数なら `export GEMINI_API_KEY="..."` のように同じ名前で設定します（`LLM_PROVIDER=gemini|openai|anthropic` で既定のAIを固定可）。
 複数設定すると、受信トレイ上部の「使うAI」や各画面のサイドバー「モデル設定」で切り替えられます。
 
