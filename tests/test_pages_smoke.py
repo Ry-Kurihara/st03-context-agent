@@ -48,14 +48,24 @@ def test_pages_are_demo_first_and_research_last():
     assert names[-len(research):] == research
 
 
-def test_main_page_links_point_to_existing_files():
+def test_page_links_point_to_existing_files():
+    """どの画面からのリンクも、実在するページを指していること（リネームで壊れないように）。"""
     import re
 
-    source = (APP / "main.py").read_text(encoding="utf-8")
-    links = re.findall(r'"(pages/[^"]+\.py)"', source)
-    assert "pages/0_📬_受信トレイ.py" in links
-    for link in links:
-        assert (APP / link).exists(), link
+    for path in [APP / "main.py", *sorted((APP / "pages").glob("*.py"))]:
+        source = path.read_text(encoding="utf-8")
+        for link in re.findall(r'"(pages/[^"]+\.py)"', source):
+            assert (APP / link).exists(), f"{path.name} のリンク切れ: {link}"
+
+    assert "pages/0_📬_受信トレイ.py" in (APP / "main.py").read_text(encoding="utf-8")
+
+
+def test_inbox_and_maildata_link_to_each_other():
+    """デモ中にサイドバーを開かずに、受信トレイ ⇄ メールデータ を行き来できること。"""
+    inbox = (APP / "pages" / "0_📬_受信トレイ.py").read_text(encoding="utf-8")
+    maildata = (APP / "pages" / "1_📥_メールデータ.py").read_text(encoding="utf-8")
+    assert "pages/1_📥_メールデータ.py" in inbox, "受信トレイ→メールデータのリンクがない"
+    assert "pages/0_📬_受信トレイ.py" in maildata, "メールデータ→受信トレイのリンクがない"
 
 
 def test_stage1_page_renders_with_api_key(monkeypatch):
