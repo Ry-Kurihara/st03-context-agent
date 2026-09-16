@@ -20,6 +20,8 @@ import ui_common as ui
 ui.page_setup("メールデータ", "📥", caption="全員共通のサンプルを選ぶ／自分のメールを追加する")
 ui.sidebar_settings(show_unit=True, show_prompt=False)
 
+ui.nav_link("pages/0_📬_受信トレイ.py", "受信トレイに戻る", "📬")
+
 specs = datasets.list_datasets()
 if not specs:
     st.error("同梱データが見つかりません。`python scripts/convert_sources.py` を実行してください。")

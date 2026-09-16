@@ -70,6 +70,8 @@ with col_ds:
     st.session_state["inbox_dataset_choice"] = chosen_dataset
     if chosen_dataset != EXTRA_DATASET:
         st.session_state[ui.K_DATASET] = chosen_dataset
+    # デモ中にサイドバーを開かずに取り込み画面へ行けるようにする
+    ui.nav_link("pages/1_📥_メールデータ.py", "メールを取り込む・追加する", "📥")
 with col_ai:
     all_providers = list(llm.PROVIDERS)
     usable = llm.available_providers()

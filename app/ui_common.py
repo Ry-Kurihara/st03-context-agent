@@ -68,6 +68,18 @@ def page_setup(title: str, icon: str = "📨", *, caption: str = "", sidebar: st
         st.caption(caption)
 
 
+def nav_link(page: str, label: str, icon: str = "") -> None:
+    """別ページへのリンク。
+
+    `st.page_link` は「ページ単体を直接実行したとき」（テストの AppTest など）には
+    ページ一覧が無く KeyError になる。本体の動作には影響しないので、その場合は黙って省く。
+    """
+    try:
+        st.page_link(page, label=label, icon=icon or None)
+    except Exception:  # pragma: no cover - AppTest 実行時のみ通る
+        pass
+
+
 def provider() -> str:
     return st.session_state.get(K_PROVIDER) or llm.default_provider()
 
