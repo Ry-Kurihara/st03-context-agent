@@ -142,3 +142,56 @@ def test_inbox_clear_also_drops_generated_replies(fake_llm):
     _button(at, "inbox_clear").click().run()
     assert not at.exception, [str(e) for e in at.exception]
     assert at.session_state["inbox_replies"] == {}
+
+
+# --------------------------------------------------------------------------
+# メールボックスの切り替え（取り込んだメールと同梱サンプルを混ぜない）
+# --------------------------------------------------------------------------
+def _imported(subject: str = "取り込んだメール", received: str = "2026-09-16T10:00:00") -> dict:
+    import datasets
+
+    return datasets.normalize_mail(
+        {"id": "imap-1", "subject": subject, "sender": "a@example.com", "body": "x", "received_at": received}
+    )
+
+
+def test_inbox_sample_mailbox_is_not_polluted_by_imported_mails(fake_llm):
+    """取り込んだメールがあっても、サンプルのメールボックスにはサンプルだけが出る。
+
+    以前は全メールボックスに取り込み分が合流し、さらに受信日が新しいため
+    期間フィルタ（直近30日）でサンプルが全部落ち、切り替えても表示が変わらなかった。
+    """
+    fake_llm([])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.session_state["extra_mails"] = [_imported()]
+    at.session_state["dataset_id"] = "sample_v2"
+    at.run()
+    assert not at.exception, [str(e) for e in at.exception]
+    subjects = set(at.session_state["inbox_subjects"])
+    assert "取り込んだメール" not in subjects
+    assert len(subjects) >= 10
+
+
+def test_inbox_imported_mailbox_shows_only_imported(fake_llm):
+    fake_llm([])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.session_state["extra_mails"] = [_imported()]
+    at.session_state["inbox_dataset_choice"] = "__extra__"
+    at.run()
+    assert not at.exception, [str(e) for e in at.exception]
+    assert set(at.session_state["inbox_subjects"]) == {"取り込んだメール"}
+
+
+def test_mailbox_mails_helper_keeps_boxes_separate():
+    import datasets
+    import streamlit as st
+
+    st.session_state["extra_mails"] = [_imported()]
+    try:
+        sample = ui.mailbox_mails("sample_v2")
+        assert all(m["id"] != "imap-1" for m in sample)
+        assert len(sample) == len(datasets.load_dataset("sample_v2"))
+        imported = ui.mailbox_mails(ui.EXTRA_MAILBOX)
+        assert [m["id"] for m in imported] == ["imap-1"]
+    finally:
+        st.session_state.pop("extra_mails", None)
