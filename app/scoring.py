@@ -2,7 +2,7 @@
 
 重要な設計判断:
 LLMが出した `priorityScore` / `priorityLabel` を**採用値**とし、
-吉田さんレポートの加重式は**参考値**として併記する。
+研究レポートの加重式は**参考値**として併記する。
 両者は構造的に矛盾するため（例: 相談メールは「一律0.5以上」というルールがあるが、
 加重式で計算すると 0.1 程度になる）、式で上書きすると指示文のルールが消える。
 乖離が見えることで「どこでルール補正が効いたか」が検証材料になる。
@@ -13,7 +13,7 @@ from typing import Any
 
 from schema import LABELS, SCORE_KEYS, UNKNOWN_LABEL
 
-# 吉田さんレポートの加重式（troubleRisk は式に含まれない）
+# 研究レポートの加重式（troubleRisk は式に含まれない）
 WEIGHTS: dict[str, float] = {
     "urgency": 0.35,
     "demand": 0.20,

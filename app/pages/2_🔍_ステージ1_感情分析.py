@@ -1,4 +1,4 @@
-"""研究ステージ1：感情パラメータ化（吉田さん最新指示文の実行画面）。"""
+"""研究ステージ1：感情パラメータ化（ステージ1の最新指示文の実行画面）。"""
 from __future__ import annotations
 
 import sys
@@ -92,7 +92,7 @@ if df is None:
     st.stop()
 st.dataframe(ui.style_by_priority(df), width="stretch", hide_index=True)
 st.caption(
-    "「総合(AI)」＝指示文のルールを含むAIの判定（採用値）／「総合(参考式)」＝吉田さんレポートの加重式。"
+    "「総合(AI)」＝指示文のルールを含むAIの判定（採用値）／「総合(参考式)」＝研究レポートの加重式。"
     "差が大きい行は、立場・相談メール・ビジネスインパクトの補正ルールが効いた可能性があります。"
 )
 

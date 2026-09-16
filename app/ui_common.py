@@ -316,6 +316,21 @@ def run_stage1(targets: Sequence[Any], *, force: bool = False) -> dict[str, Anal
     return {thread_mod.target_key(t): results().get(thread_mod.target_key(t)) for t in targets}
 
 
+def clear_result(target_key: str) -> bool:
+    """対象1件の解析結果を消す（納得のいかない解析をやり直すため）。
+
+    キャッシュも消さないと、同じ条件での再解析が再利用に化けてAPIを呼ばない。
+    戻り値は「消すものがあったか」。
+    """
+    results_map = st.session_state.setdefault(K_RESULTS, {})
+    removed = results_map.pop(target_key, None)
+    cache = st.session_state.setdefault(K_CACHE, {})
+    for key in [k for k, v in cache.items() if v is removed and removed is not None]:
+        del cache[key]
+    st.session_state.setdefault(K_HISTORY, {}).pop(target_key, None)
+    return removed is not None
+
+
 def confirm_note(targets: Sequence[Any]) -> None:
     st.write(
         f"対象 **{len(targets)}件** ／ {provider_label()} `{llm.default_model(provider())}` "
@@ -398,7 +413,7 @@ def render_priority(result: AnalysisResult) -> None:
     cols[2].metric(
         "参考：加重式",
         "—" if reference is None else f"{reference:.2f}",
-        help="吉田さんレポートの加重式で計算した参考値。指示文のルール補正（相談は0.5以上等）は反映されないため、"
+        help="研究レポートの加重式で計算した参考値。指示文のルール補正（相談は0.5以上等）は反映されないため、"
         "AI採用値との差はルールが効いた箇所を示します。",
     )
     if reference is not None and result.priority_score is not None:

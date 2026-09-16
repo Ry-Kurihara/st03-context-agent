@@ -5,10 +5,10 @@
 元データが更新されたときだけ、開発側でこれを回して `data/*.json` を作り直す。
 
     python scripts/convert_sources.py            # 3ファイルすべて生成
-    python scripts/convert_sources.py akagi      # 一部だけ生成
+    python scripts/convert_sources.py relation      # 一部だけ生成
 
 生成物:
-    data/akagi_demo_emails.json   赤木さんデモメール（関係良好10通／関係険悪5通）
+    data/relation_mixed_emails.json   関係性混在メール（関係良好10通／関係険悪5通）
     data/mixed_emotion_50.json    混在感情メール50通（.eml から）
     data/sample_emails_v2.json    モックメール（TO/CC・署名の役職つき／対照ペア追加）
 """
@@ -30,7 +30,11 @@ sys.path.insert(0, str(REPO_ROOT / "app"))
 import eml_loader  # noqa: E402
 from datasets import normalize_all, to_json  # noqa: E402
 
-AKAGI_XLSX = WORKSPACE / "デモ用サンプルメール（赤木さん・良好険悪）" / "インプットデータ（良好、険悪）.xlsx"
+# 元データのフォルダ名は作成者名を含むため、ワイルドカードで探す
+RELATION_XLSX = next(
+    iter(sorted(WORKSPACE.glob("デモ用サンプルメール（*良好険悪）/インプットデータ（良好、険悪）.xlsx"))),
+    WORKSPACE / "デモ用サンプルメール（良好険悪）" / "インプットデータ（良好、険悪）.xlsx",
+)
 EML_DIR = WORKSPACE / "デモ用サンプルメール（感情入り混じった版✕50通）"
 
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
@@ -40,7 +44,7 @@ ME = "me@your-company.com"
 
 
 # --------------------------------------------------------------------------
-# ① 赤木さんデモメール（xlsx）
+# ① 関係性混在メール（xlsx）
 # --------------------------------------------------------------------------
 def _shared_strings(zf: zipfile.ZipFile) -> list[str]:
     try:
@@ -84,10 +88,10 @@ def _split_subject_and_body(raw: str) -> tuple[str, str]:
     return subject or "（件名なし）", body
 
 
-def build_akagi() -> list[dict]:
-    if not AKAGI_XLSX.exists():
-        raise SystemExit(f"元データが見つかりません: {AKAGI_XLSX}")
-    zf = zipfile.ZipFile(AKAGI_XLSX)
+def build_relation_mixed() -> list[dict]:
+    if not RELATION_XLSX.exists():
+        raise SystemExit(f"元データが見つかりません: {RELATION_XLSX}")
+    zf = zipfile.ZipFile(RELATION_XLSX)
     sheets = {"関係良好": "xl/worksheets/sheet1.xml", "関係険悪": "xl/worksheets/sheet2.xml"}
 
     mails: list[dict] = []
@@ -110,8 +114,8 @@ def build_akagi() -> list[dict]:
             recipient = "a@your-company.com" if prefix == "good" else "b@your-company.com"
             mails.append(
                 {
-                    "id": f"akagi-{prefix}-{index:02d}",
-                    "thread_id": f"akagi-{prefix}-{index:02d}",
+                    "id": f"rel-{prefix}-{index:02d}",
+                    "thread_id": f"rel-{prefix}-{index:02d}",
                     "subject": subject,
                     "sender": "taro@partner-corp.co.jp",
                     "to": [recipient],
@@ -120,7 +124,7 @@ def build_akagi() -> list[dict]:
                     "body": body,
                     "signature": "株式会社パートナーコープ 太郎\ntaro@partner-corp.co.jp",
                     "category": category,
-                    "source": "赤木さんデモメール（xlsx）",
+                    "source": "関係性混在メール（xlsx由来）",
                 }
             )
     return mails
@@ -160,7 +164,7 @@ ENRICHMENT: dict[str, dict] = {
     "mail-009": {"cc": [], "signature": "株式会社パートナー商事 中村"},
     "mail-010": {"cc": ["keiri@vendor.example.com"], "signature": "ベンダー株式会社 経理課 小林"},
     "mail-011": {"cc": ["team-all@example.com"], "signature": "加藤"},
-    "mail-012": {"cc": ["bucho@partner.co.jp"], "signature": "株式会社パートナー商事 吉田"},
+    "mail-012": {"cc": ["bucho@partner.co.jp"], "signature": "株式会社パートナー商事 竹内"},
     "mail-013": {"cc": [], "signature": "クライアント株式会社 購買部 部長 山本浩"},
     "mail-014": {"cc": [], "signature": "クライアント株式会社 松田"},
     "mail-015": {"cc": [], "signature": "クライアント株式会社 松田"},
@@ -251,7 +255,7 @@ def build_sample_v2() -> list[dict]:
 
 # --------------------------------------------------------------------------
 BUILDERS = {
-    "akagi": ("akagi_demo_emails.json", build_akagi),
+    "relation": ("relation_mixed_emails.json", build_relation_mixed),
     "mixed": ("mixed_emotion_50.json", build_mixed_emotion),
     "sample_v2": ("sample_emails_v2.json", build_sample_v2),
 }

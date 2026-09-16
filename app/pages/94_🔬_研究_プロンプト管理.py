@@ -17,7 +17,7 @@ from prompts import registry
 ui.page_setup("プロンプト管理", "⚙️", caption="指示文の中身を読む／書き換えて自分用に保存する")
 
 st.info(
-    "組み込みの指示文（吉田さん最新版など）は**上書きされません**。"
+    "組み込みの指示文（ステージ1最新版など）は**上書きされません**。"
     "編集すると別名で保存され、各画面のプルダウンに追加されます。"
 )
 st.warning(
@@ -82,7 +82,7 @@ with st.form("pm_save"):
         "出力スキーマ",
         ["v3", "v0", "-"],
         index=["v3", "v0", "-"].index(spec.schema_version) if spec.schema_version in ("v3", "v0", "-") else 0,
-        help="v3＝7指標＋論拠＋総合評価（吉田さん最新版と同じ形）／v0＝旧3指標。返信生成は「-」。",
+        help="v3＝7指標＋論拠＋総合評価（ステージ1最新版と同じ形）／v0＝旧3指標。返信生成は「-」。",
     )
     notes = st.text_input("メモ", value="")
     saved = st.form_submit_button("この内容で保存する", type="primary")

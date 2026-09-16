@@ -26,18 +26,18 @@ class DatasetSpec:
 
 BUILTIN: tuple[DatasetSpec, ...] = (
     DatasetSpec(
-        id="akagi_demo",
-        label="① 赤木さんデモメール（関係良好10通／関係険悪5通）",
-        file="akagi_demo_emails.json",
-        description="吉田さん・廣瀬さんの検証で使われたデモメール。プロンプト改良の定点観測に使う。",
-        source="デモ用サンプルメール（赤木さん・良好険悪）/インプットデータ（良好、険悪）.xlsx",
-        note="xlsxの「関係険悪」シート6〜10行目は「関係良好」と同一文面（お礼メール）のため除外し、険悪は5通としている。",
+        id="relation_mixed",
+        label="① 関係性混在メール（関係良好10通／関係険悪5通）",
+        file="relation_mixed_emails.json",
+        description="同じ相手との、関係が良好なやり取りと険悪なやり取り。プロンプト改良の定点観測に使う。",
+        source="デモ用サンプルメール（良好・険悪）/インプットデータ（良好、険悪）.xlsx",
+        note="出典xlsxの「関係険悪」シート6〜10行目は「関係良好」と同一文面（お礼メール）のため除外し、険悪は5通としている。",
     ),
     DatasetSpec(
         id="mixed_emotion_50",
         label="② 混在感情メール（50通）",
         file="mixed_emotion_50.json",
-        description="丁寧だが婉曲な断り・混在感情のサンプル。平井さんのIBMツールと同一入力。",
+        description="丁寧だが婉曲な断り・混在感情のサンプル。既存ツールでの検証と同一入力。",
         source="デモ用サンプルメール（感情入り混じった版✕50通）/*.eml",
     ),
     DatasetSpec(

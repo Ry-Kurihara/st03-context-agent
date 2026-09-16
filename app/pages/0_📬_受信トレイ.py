@@ -166,6 +166,11 @@ latest = mails[-1]
 result = found.get(selected_key)
 
 
+def replies_state() -> dict:
+    """生成済みの返信案（対象キー＋プロバイダごと）。"""
+    return st.session_state.setdefault(K_REPLIES, {})
+
+
 def render_score_bars(result) -> None:
     """7指標を小さな横棒で表示する（st.metric だと縦に場所を取るため）。0.6以上は強調。"""
     cells = []
@@ -230,10 +235,19 @@ with right:
         render_score_bars(result)
         with st.expander("判定の論拠（AIがそう読み取った理由）"):
             ui.render_reasoning(result)
+        if st.button(
+            "🧹 この解析結果を消す（やり直す）",
+            key="inbox_clear",
+            help="納得のいかない読み取りを消して、同じ条件で解析し直せます（キャッシュも消します）。",
+        ):
+            ui.clear_result(selected_key)
+            for key in [k for k in replies_state() if k.startswith(f"{selected_key}|")]:
+                replies_state().pop(key)
+            st.rerun()
 
     st.markdown("#### ✍️ 返信案")
     reply_key = f"{selected_key}|{chosen_provider}"
-    replies = st.session_state.setdefault(K_REPLIES, {})
+    replies = replies_state()
     existing = replies.get(reply_key)
 
     if st.button(
