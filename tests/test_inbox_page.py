@@ -195,3 +195,32 @@ def test_mailbox_mails_helper_keeps_boxes_separate():
         assert [m["id"] for m in imported] == ["imap-1"]
     finally:
         st.session_state.pop("extra_mails", None)
+
+
+def test_inbox_clear_replies_keeps_analysis(fake_llm):
+    """返信案だけを消せる（解析結果は残る）。撮り直しのために使う。"""
+    client = fake_llm([V3_RESPONSE] * 19 + ["返信1", "返信2", "返信3"])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.run()
+    _button(at, "inbox_analyze").click().run()
+    _button(at, "inbox_reply").click().run()
+    selected = at.session_state["inbox_selected"]
+    assert at.session_state["inbox_replies"]
+    assert len(at.code) >= 3
+
+    _button(at, "inbox_clear_replies").click().run()
+    assert not at.exception, [str(e) for e in at.exception]
+    # 返信案だけ消え、解析結果と他のメールの解析は残る
+    assert at.session_state["inbox_replies"] == {}
+    assert selected in at.session_state["stage1_results"]
+    assert len(at.session_state["stage1_results"]) == 19
+    assert len(at.code) == 0
+    # もう一度作れる（APIは再度呼ばれる）
+    assert len(client.calls) == 22
+
+
+def test_inbox_clear_replies_button_hidden_before_generating(fake_llm):
+    fake_llm([])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.run()
+    assert not any(b.key == "inbox_clear_replies" for b in at.button)
