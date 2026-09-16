@@ -252,7 +252,17 @@ with right:
     replies = replies_state()
     existing = replies.get(reply_key)
 
-    if st.button(
+    col_make, col_clear = st.columns([3, 2]) if existing else (st.container(), None)
+    if col_clear is not None and col_clear.button(
+        "🧹 返信案を消す",
+        key="inbox_clear_replies",
+        help="生成した返信案だけを消します（AIの読み取り結果は残ります）。",
+    ):
+        for key in [k for k in replies_state() if k.startswith(f"{selected_key}|")]:
+            replies_state().pop(key)
+        st.rerun()
+
+    if col_make.button(
         "✍️ 返信案を作り直す" if existing else "✍️ 返信案を3つの書き方で作る",
         type="secondary" if existing else "primary",
         key="inbox_reply",
@@ -282,7 +292,7 @@ with right:
                 for (label, pid), res in zip(registry.DEMO_REPLY_PROMPTS, generated)
             ],
         }
-        existing = replies[reply_key]
+        st.rerun()  # 「消す」ボタンと3案の表示を出すため、描き直す
 
     if existing:
         st.caption("👇 下に3案を並べて表示しています。")
