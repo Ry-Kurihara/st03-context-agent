@@ -106,3 +106,39 @@ def test_inbox_table_lists_unanalyzed_threads_too():
     df = ui.inbox_table(targets, {})
     assert len(df) == len(targets)
     assert set(df["優先度"]) == {"⚪ 未解析"}
+
+
+def test_inbox_clear_one_result_allows_reanalysis(fake_llm):
+    """収録前に「納得いかない解析」を消して、同じ条件で解析し直せること。"""
+    client = fake_llm([V3_RESPONSE] * 19 + [V3_RESPONSE])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.run()
+    _button(at, "inbox_analyze").click().run()
+    assert len(client.calls) == 19
+    selected = at.session_state["inbox_selected"]
+    assert selected in at.session_state["stage1_results"]
+
+    _button(at, "inbox_clear").click().run()
+    assert not at.exception, [str(e) for e in at.exception]
+    # 選択中のメールだけが未解析に戻る（他は残る）
+    assert selected not in at.session_state["stage1_results"]
+    assert len(at.session_state["stage1_results"]) == 18
+
+    # 同じ条件でもキャッシュを使わず、もう一度APIを呼ぶ
+    _button(at, "inbox_analyze_one").click().run()
+    assert not at.exception, [str(e) for e in at.exception]
+    assert len(client.calls) == 20
+    assert selected in at.session_state["stage1_results"]
+
+
+def test_inbox_clear_also_drops_generated_replies(fake_llm):
+    client = fake_llm([V3_RESPONSE] * 19 + ["返信1", "返信2", "返信3"])
+    at = AppTest.from_file(str(INBOX), default_timeout=60)
+    at.run()
+    _button(at, "inbox_analyze").click().run()
+    _button(at, "inbox_reply").click().run()
+    assert at.session_state["inbox_replies"]
+
+    _button(at, "inbox_clear").click().run()
+    assert not at.exception, [str(e) for e in at.exception]
+    assert at.session_state["inbox_replies"] == {}

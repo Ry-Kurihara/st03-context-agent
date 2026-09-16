@@ -63,7 +63,7 @@ def test_priority_style_covers_all_labels():
 
 
 def test_low_label_color_follows_report_blue():
-    """吉田さんレポート準拠（低=青）。現行アプリの緑から変更している。"""
+    """研究レポート準拠（低=青）。現行アプリの緑から変更している。"""
     assert scoring.priority_style("低") == ("🔵", "#d6e9ff")
 
 

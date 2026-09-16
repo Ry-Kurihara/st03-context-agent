@@ -175,7 +175,7 @@ def test_stage2_pair_evaluation_is_recorded(fake_llm):
         "target_label": "[T-1] テスト",
         "mail_text": "本文",
         "parameters": {},
-        "analysis_prompt_id": "analysis_v3_yoshida_20260729",
+        "analysis_prompt_id": "analysis_v3_20260729",
         "pid_a": "reply_r1_plain",
         "pid_b": "reply_r1_verbalize",
         "reply_a": "返信案A",
@@ -203,7 +203,7 @@ def test_stage2_pair_evaluation_is_recorded(fake_llm):
 
 def test_answer_check_page_opens_with_results(fake_llm):
     fake_llm([])
-    result = schema.parse_analysis(V3_RESPONSE, meta={"prompt_id": "analysis_v3_yoshida_20260729"})
+    result = schema.parse_analysis(V3_RESPONSE, meta={"prompt_id": "analysis_v3_20260729"})
     at = AppTest.from_file(str(APP / "pages" / "93_🔬_研究_答え合わせ.py"), default_timeout=60)
     at.session_state["stage1_results"] = {"T-1": result}
     at.run()

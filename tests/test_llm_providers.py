@@ -135,7 +135,7 @@ def test_analyze_with_openai_provider():
         "received_at": "2026-06-01T10:00:00",
         "body": "本文",
     }
-    result = analyzer.analyze(mail, prompt_id="analysis_v3_yoshida_20260729", client=client, provider="openai")
+    result = analyzer.analyze(mail, prompt_id="analysis_v3_20260729", client=client, provider="openai")
     assert isinstance(result, schema.AnalysisResult)
     assert result.priority_label == "高"
     assert result.meta["provider"] == "openai"

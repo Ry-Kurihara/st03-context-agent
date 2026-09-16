@@ -39,7 +39,7 @@ def test_find_tokens():
 def test_registry_has_analysis_and_reply_prompts():
     analysis = registry.list_prompts(kind="analysis")
     reply = registry.list_prompts(kind="reply")
-    assert any(spec.id == "analysis_v3_yoshida_20260729" for spec in analysis)
+    assert any(spec.id == "analysis_v3_20260729" for spec in analysis)
     assert any(spec.id == "analysis_v0_baseline" for spec in analysis)
     # 案①〜③のプリセット8本
     assert len(reply) >= 7
@@ -56,14 +56,14 @@ def test_registry_all_prompts_loadable_and_tokens_present():
 
 
 def test_load_prompt_returns_raw_text_unchanged():
-    spec = registry.get_spec("analysis_v3_yoshida_20260729")
+    spec = registry.get_spec("analysis_v3_20260729")
     raw = (registry.prompts_dir() / spec.file).read_text(encoding="utf-8")
     assert registry.load_prompt(spec.id) == raw
 
 
-def test_yoshida_prompt_keeps_japanese_annotated_keys():
-    """吉田さん指示文の厳守事項（英単語＋カッコ内日本語）が原文のまま入っていること。"""
-    text = registry.load_prompt("analysis_v3_yoshida_20260729")
+def test_analysis_prompt_keeps_japanese_annotated_keys():
+    """ステージ1指示文の厳守事項（英単語＋カッコ内日本語）が原文のまま入っていること。"""
+    text = registry.load_prompt("analysis_v3_20260729")
     assert '"urgency（緊急度）"' in text
     assert '"accumulatedDissatisfaction（蓄積された不満度）"' in text
     assert '"priorityLabel（優先度ラベル）"' in text
