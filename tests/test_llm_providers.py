@@ -323,3 +323,67 @@ def test_anthropic_skips_beta_params_when_gateway_is_used(monkeypatch):
     llm.call_text("x", client=client, provider="anthropic", model_name="claude-opus-5")
     assert "fallbacks" not in client.calls[0]
     assert "betas" not in client.calls[0]
+
+
+# --------------------------------------------------------------------------
+# 共通キー方式（社内ゲートウェイ経由で3プロバイダをまとめて設定する）
+# --------------------------------------------------------------------------
+GATEWAY = "https://gateway.example.com"
+
+
+def test_gateway_base_url_applies_to_every_provider(monkeypatch):
+    """共通の接続先1つで3プロバイダぶんの base_url が決まる（パスの違いは内部で吸収）。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    assert llm.base_url("openai") == f"{GATEWAY}/v1"      # OpenAI SDK は /chat/completions を足す
+    assert llm.base_url("anthropic") == GATEWAY           # Anthropic SDK は /v1/messages を足す
+    assert llm.base_url("gemini") == GATEWAY              # google-genai は /v1beta/... を足す
+
+
+def test_provider_base_url_overrides_gateway(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.example/v1")
+    assert llm.base_url("openai") == "https://api.openai.example/v1"
+
+
+def test_gateway_key_is_shared_by_every_provider(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    assert llm.available_providers() == ["gemini", "openai", "anthropic"]
+    for pid in ("gemini", "openai", "anthropic"):
+        assert llm.client_options(pid) == {"api_key": "gw-key", "base_url": llm.base_url(pid)}
+
+
+def test_gateway_key_is_not_used_against_official_endpoints(monkeypatch):
+    """接続先がゲートウェイでないプロバイダには、共通キーを使わない（社内キーの誤送信を防ぐ）。"""
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")  # 接続先の指定なし
+    assert llm.available_providers() == []
+    with pytest.raises(llm.MissingApiKeyError):
+        llm.client_options("openai")
+
+
+def test_provider_key_wins_over_gateway_key(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "own-key")
+    assert llm.client_options("gemini")["api_key"] == "own-key"
+
+
+def test_gemini_client_receives_base_url_as_http_options(monkeypatch):
+    """google-genai は base_url を http_options で受け取る。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    captured: dict = {}
+
+    class FakeGenAIClient:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    from google import genai
+
+    monkeypatch.setattr(genai, "Client", FakeGenAIClient)
+    llm._clients.clear()
+    llm.get_client("gemini")
+    assert captured["api_key"] == "gw-key"
+    assert captured["http_options"] == {"base_url": GATEWAY}
+    assert "base_url" not in captured
+    llm._clients.clear()
