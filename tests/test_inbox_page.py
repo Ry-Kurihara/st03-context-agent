@@ -235,7 +235,8 @@ def test_extra_mailbox_is_always_selectable_even_when_empty(fake_llm):
     at.run()
     assert not at.exception, [str(e) for e in at.exception]
     box = [s for s in at.selectbox if s.key == "inbox_dataset"][0]
-    assert ui.EXTRA_MAILBOX in box.options
+    # options は format_func 適用後のラベルが入る
+    assert "📥 追加したメールデータ（0通）" in box.options
 
 
 def test_extra_mailbox_label_shows_count():
@@ -250,9 +251,11 @@ def test_empty_extra_mailbox_explains_the_integration(fake_llm):
     at.session_state["inbox_dataset_choice"] = ui.EXTRA_MAILBOX
     at.run()
     assert not at.exception, [str(e) for e in at.exception]
-    text = "\n".join([m.value for m in at.markdown] + [c.value for c in at.caption])
-    assert "IMAP" in text and ".eml" in text
-    assert "選択中の生成AI" in text and "社内規定" in text
-    # 商標名は出さない
-    assert not any(word in text for word in ("Gmail", "Outlook", "Gemini", "OpenAI", "Claude"))
+    panel = "\n".join(
+        e.value for e in [*at.markdown, *at.caption] if "外部のメールサービス" in e.value or "生成AI" in e.value
+    )
+    assert "IMAP" in panel and ".eml" in panel
+    assert "選択中の生成AI" in panel and "社内規定" in panel
+    # 案内文そのものにはサービス名を出さない（デモ表示モードの有無によらず）
+    assert not any(word in panel for word in ("Gmail", "Outlook", "Gemini", "OpenAI", "Claude"))
     assert not at.dataframe, "0通なのに一覧が出ている"

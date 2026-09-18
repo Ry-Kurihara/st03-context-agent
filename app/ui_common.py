@@ -125,6 +125,17 @@ def get_mails() -> list[dict[str, Any]]:
     return datasets.merge_datasets(base, extra_mails())
 
 
+def mailbox_label(mailbox_id: str, count: int | None = None) -> str:
+    """メールボックスの表示名。「追加したメールデータ」は0通でも選べるようにしてある。"""
+    if mailbox_id == EXTRA_MAILBOX:
+        n = len(extra_mails()) if count is None else count
+        return f"📥 追加したメールデータ（{n}通）"
+    try:
+        return datasets.get_spec(mailbox_id).label
+    except KeyError:
+        return mailbox_id
+
+
 def mailbox_mails(mailbox_id: str) -> list[dict[str, Any]]:
     """メールボックス1つぶんのメール。
 

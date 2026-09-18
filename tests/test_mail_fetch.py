@@ -182,6 +182,6 @@ def test_imap_notice_asks_user_to_check_rules_without_prohibiting(monkeypatch):
     at = AppTest.from_file(str(page), default_timeout=60)
     at.run()
     notices = "\n".join([w.value for w in at.warning] + [c.value for c in at.caption])
-    assert "選択中の生成AI" in notices
-    assert "個人情報の取り扱いと社内規定をご確認のうえ" in notices
+    assert "解析・返信案の作成時に" in notices
+    assert "個人情報の取り扱いと社内規定をご確認のうえ、取り込むメールをお選びください" in notices
     assert "社内のメールアカウントは使わないでください" not in notices

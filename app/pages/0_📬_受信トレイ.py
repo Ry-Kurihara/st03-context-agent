@@ -54,9 +54,9 @@ st.markdown(
 specs = datasets.list_datasets()
 dataset_ids = [spec.id for spec in specs]
 dataset_labels = {spec.id: spec.label for spec in specs}
-if ui.extra_mails():
-    dataset_ids.append(EXTRA_DATASET)
-    dataset_labels[EXTRA_DATASET] = f"📥 取り込んだメール（{len(ui.extra_mails())}通）"
+# 「追加したメールデータ」は0通でも常に出す（連携機能があることを画面で示すため）
+dataset_ids.append(EXTRA_DATASET)
+dataset_labels[EXTRA_DATASET] = ui.mailbox_label(EXTRA_DATASET)
 
 current_dataset = st.session_state.get("inbox_dataset_choice", ui.current_dataset_id())
 col_ds, col_ai, col_status = st.columns([4, 3, 4])
@@ -71,8 +71,6 @@ with col_ds:
     st.session_state["inbox_dataset_choice"] = chosen_dataset
     if chosen_dataset != EXTRA_DATASET:
         st.session_state[ui.K_DATASET] = chosen_dataset
-    # デモ中にサイドバーを開かずに取り込み画面へ行けるようにする
-    ui.nav_link("pages/1_📥_メールデータ.py", "メールを取り込む・追加する", "📥")
 with col_ai:
     all_providers = list(llm.PROVIDERS)
     usable = llm.available_providers()
@@ -102,8 +100,29 @@ with col_status:
 if not ui.api_key_ready(chosen_provider):
     st.warning(display.missing_key_message(chosen_provider) + "\n\n（一覧の表示のみできます）")
 
+if targets:
+    # デモ中にサイドバーを開かずに取り込み画面へ行けるようにする（空の案内パネルとは重複させない）
+    with col_ds:
+        ui.nav_link("pages/1_📥_メールデータ.py", "メールを取り込む・追加する", "📥")
+
 if not targets:
-    st.info("メールがありません。")
+    if chosen_dataset == EXTRA_DATASET:
+        with st.container(border=True):
+            st.markdown("#### 📥 追加したメールデータ")
+            st.markdown(
+                "ここには、**外部のメールサービスから取り込んだメール**や、"
+                "**ファイル・本文から追加したメール**が入ります。\n\n"
+                "- メールサービスから取り込む（IMAP・**読み取り専用**）\n"
+                "- `.eml` ファイルを読み込む\n"
+                "- 本文を貼り付けて追加する"
+            )
+            st.caption(
+                "取り込んだ内容は、解析・返信案の作成時に、選択中の生成AIへ送信されます。"
+                "個人情報の取り扱いと社内規定をご確認のうえ、取り込むメールをお選びください。"
+            )
+            ui.nav_link("pages/1_📥_メールデータ.py", "メールを取り込む・追加する", "📥")
+    else:
+        st.info("メールがありません。")
     st.stop()
 
 if pending:

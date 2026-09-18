@@ -114,8 +114,8 @@ with tab_imap:
         "パスワードは保存しません。"
     )
     st.warning(
-        "社内のメールアカウントは使わないでください（社内規定・個人情報の観点）。"
-        f"取り込んだ内容は、解析・返信案作成のときに{display.ai_names_for_notice()}へ送信されます。"
+        f"取り込んだ内容は、解析・返信案の作成時に、{display.ai_names_for_notice()}へ送信されます。"
+        "個人情報の取り扱いと社内規定をご確認のうえ、取り込むメールをお選びください。"
     )
     # 取り込み成功後は、次の描画でアプリパスワードだけ空にする（宛先・件数は残す）
     if st.session_state.pop("imap_clear_password", False):
