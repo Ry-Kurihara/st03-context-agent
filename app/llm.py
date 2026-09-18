@@ -1,8 +1,11 @@
 """LLM呼び出しの共通部（Gemini / OpenAI / Anthropic Claude の切り替え）。
 
 - APIキーは環境変数、無ければ Streamlit Secrets から読む
-- 接続先は `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` で差し替えられる
-  （社内ゲートウェイ経由で使う場合。未設定なら各社の公式エンドポイント）
+- 接続先は `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` / `GEMINI_BASE_URL` で差し替えられる
+  （未設定なら各社の公式エンドポイント）
+- 3社まとめてゲートウェイ経由にする場合は `LLM_GATEWAY_BASE_URL` と `LLM_GATEWAY_API_KEY` の2つでよい。
+  SDKごとに足すパスが違う（OpenAIは `/chat/completions`、Anthropicは `/v1/messages`、
+  google-genaiは `/v1beta/...`）ため、その差はここで吸収する
   （Streamlit Cloud では Secrets が環境変数にも入るが、念のため両方見る）
 - クライアント生成は遅延（テストではフェイククライアントを注入する）
 - `temperature` は既定 0.0。同じ入力での出力の揺れを抑えるため。
@@ -25,6 +28,10 @@ ANTHROPIC_MAX_TOKENS = 16000
 ANTHROPIC_FALLBACK_BETA = "server-side-fallback-2026-07-01"
 ANTHROPIC_FALLBACK_MODELS = ("claude-opus-5", "claude-fable-5-1")
 
+# 3プロバイダ共通の設定（社内ゲートウェイ経由で使うとき）
+GATEWAY_KEY_ENV = "LLM_GATEWAY_API_KEY"
+GATEWAY_BASE_URL_ENV = "LLM_GATEWAY_BASE_URL"
+
 
 @dataclass(frozen=True)
 class ProviderSpec:
@@ -36,6 +43,8 @@ class ProviderSpec:
     default_model: str
     package: str
     note: str = ""
+    # 共通の接続先（LLM_GATEWAY_BASE_URL）に足すパス。SDKが自分で足すぶんとの差を埋める
+    gateway_path: str = ""
 
 
 PROVIDERS: dict[str, ProviderSpec] = {
@@ -44,7 +53,7 @@ PROVIDERS: dict[str, ProviderSpec] = {
         label="Gemini（Google AI Studio）",
         key_env="GEMINI_API_KEY",
         model_env="GEMINI_MODEL",
-        base_url_env="",  # google-genai は base_url の差し替えに未対応
+        base_url_env="GEMINI_BASE_URL",  # SDKが `/v1beta/...` を足すので、ホストだけを渡す
         default_model="gemini-2.5-flash",
         package="google-genai",
         note="研究会の既定。プロジェクト単位のSpend Capで上限管理。",
@@ -55,6 +64,7 @@ PROVIDERS: dict[str, ProviderSpec] = {
         key_env="OPENAI_API_KEY",
         model_env="OPENAI_MODEL",
         base_url_env="OPENAI_BASE_URL",
+        gateway_path="/v1",  # SDKが足すのは `/chat/completions` までなので `/v1` が要る
         default_model="gpt-4o-mini",
         package="openai",
         note="モデル名は OPENAI_MODEL で上書きできます（既定が廃止された場合はここを変更）。",
@@ -116,7 +126,7 @@ def spec_of(provider: str) -> ProviderSpec:
 
 
 def has_key(provider: str) -> bool:
-    return bool(get_secret(spec_of(provider).key_env))
+    return bool(api_key_of(provider))
 
 
 def available_providers() -> list[str]:
@@ -148,15 +158,39 @@ def has_api_key(provider: str | None = None) -> bool:
 
 
 def base_url(provider: str | None = None) -> str | None:
-    """接続先の上書き（未設定なら None＝公式エンドポイント）。"""
+    """接続先。プロバイダ個別の指定 → 共通の指定 → None（＝公式エンドポイント）の順。"""
     spec = spec_of(provider or default_provider())
-    return get_secret(spec.base_url_env) if spec.base_url_env else None
+    own = get_secret(spec.base_url_env) if spec.base_url_env else None
+    if own:
+        return own
+    gateway = get_secret(GATEWAY_BASE_URL_ENV)
+    return gateway.rstrip("/") + spec.gateway_path if gateway else None
+
+
+def api_key_of(provider: str) -> str | None:
+    """APIキー。**送信先とセットで**選ぶ。
+
+    - 接続先が共通の指定（`LLM_GATEWAY_BASE_URL`）から来ているなら、共通キーを使う
+      （公式エンドポイント用のキーが残っていても、そちらをゲートウェイに送らない）
+    - 接続先を個別に指定している／公式エンドポイントなら、そのプロバイダのキーを使う
+    - 公式エンドポイントに共通キーは使わない（社内キーの誤送信を防ぐ）
+    """
+    spec = spec_of(provider)
+    own = get_secret(spec.key_env)
+    gateway_key = get_secret(GATEWAY_KEY_ENV)
+    own_base_url = get_secret(spec.base_url_env) if spec.base_url_env else None
+
+    if own_base_url:
+        return own or gateway_key
+    if get_secret(GATEWAY_BASE_URL_ENV):
+        return gateway_key or own
+    return own
 
 
 def client_options(provider: str | None = None) -> dict[str, str]:
     """SDKのクライアントに渡す引数（APIキーと、あれば接続先）。"""
     spec = spec_of(provider or default_provider())
-    api_key = get_secret(spec.key_env)
+    api_key = api_key_of(spec.id)
     if not api_key:
         raise MissingApiKeyError(
             f"{spec.label} を使うには `{spec.key_env}` が必要です。"
@@ -181,7 +215,12 @@ def get_client(provider: str | None = None) -> Any:
     if pid == PROVIDER_GEMINI:
         from google import genai  # 遅延import
 
-        _clients[pid] = genai.Client(**options)
+        # google-genai は base_url を http_options で受け取る
+        gemini_options = dict(options)
+        endpoint = gemini_options.pop("base_url", None)
+        if endpoint:
+            gemini_options["http_options"] = {"base_url": endpoint}
+        _clients[pid] = genai.Client(**gemini_options)
     elif pid == PROVIDER_ANTHROPIC:
         try:
             import anthropic  # 遅延import

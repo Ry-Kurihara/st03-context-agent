@@ -164,7 +164,22 @@ ANTHROPIC_API_KEY = "your_anthropic_api_key"
 # 任意：接続先の差し替え（社内ゲートウェイ経由で使う場合）
 # OPENAI_BASE_URL = "https://<gateway>/v1"
 # ANTHROPIC_BASE_URL = "https://<gateway>"   # Anthropic SDK が /v1/messages を足すので /v1 は付けない
+# GEMINI_BASE_URL = "https://<gateway>"      # google-genai が /v1beta/... を足すので /v1 は付けない
 ```
+
+**3プロバイダまとめてゲートウェイ経由にするなら、キーと接続先は2行で済みます。**
+
+```toml
+LLM_GATEWAY_API_KEY  = "your_gateway_key"
+LLM_GATEWAY_BASE_URL = "https://<gateway>"   # パスの違い（/v1 など）はアプリ側で吸収する
+OPENAI_MODEL    = "gpt-5.1"
+ANTHROPIC_MODEL = "claude-sonnet-5"
+GEMINI_MODEL    = "gemini-3.6-flash"
+```
+
+- **キーは送信先とセットで選ばれます。** 接続先が `LLM_GATEWAY_BASE_URL` から来ている場合は共通キーを使い、
+  公式エンドポイントに共通キーを送ることはありません（逆に、公式エンドポイント用のキーをゲートウェイに送ることもありません）
+- プロバイダ個別に `*_BASE_URL` / `*_API_KEY` を書けば、そちらが優先されます
 
 ### デモ表示モード（商標名を画面に出さない）
 

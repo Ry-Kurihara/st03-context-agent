@@ -361,11 +361,31 @@ def test_gateway_key_is_not_used_against_official_endpoints(monkeypatch):
         llm.client_options("openai")
 
 
-def test_provider_key_wins_over_gateway_key(monkeypatch):
+def test_key_pairs_with_the_endpoint_it_is_sent_to(monkeypatch):
+    """キーは「送信先」とセットで選ぶ。
+
+    公式エンドポイント向けのキーが残っていても、接続先がゲートウェイなら共通キーを使う
+    （逆をやると 401 になる。実際に踏んだ）。
+    """
     monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
     monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
-    monkeypatch.setenv("GEMINI_API_KEY", "own-key")
-    assert llm.client_options("gemini")["api_key"] == "own-key"
+    monkeypatch.setenv("GEMINI_API_KEY", "official-key")
+    assert llm.client_options("gemini") == {"api_key": "gw-key", "base_url": GATEWAY}
+
+
+def test_provider_key_is_used_for_official_endpoint(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")  # 接続先の指定なし＝公式
+    monkeypatch.setenv("GEMINI_API_KEY", "official-key")
+    assert llm.client_options("gemini") == {"api_key": "official-key"}
+
+
+def test_provider_key_is_used_when_provider_sets_its_own_base_url(monkeypatch):
+    """プロバイダ個別に接続先を指定した場合は、そのプロバイダのキーを優先する。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://other.example/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "own-key")
+    assert llm.client_options("openai") == {"api_key": "own-key", "base_url": "https://other.example/v1"}
 
 
 def test_gemini_client_receives_base_url_as_http_options(monkeypatch):
