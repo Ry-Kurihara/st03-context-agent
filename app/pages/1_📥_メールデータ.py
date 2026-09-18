@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 
 import datasets
+import display
 import eml_loader
 import mail_fetch
 import thread as thread_mod
@@ -108,13 +109,13 @@ tab_imap, tab_eml, tab_form = st.tabs(["📮 個人のメールアカウント�
 
 with tab_imap:
     st.caption(
-        "個人のメールアカウント（Gmail / Outlook.com）の受信トレイから、新しい順にメールを読み取ります。"
+        f"個人のメールアカウント（{display.mail_services_for_notice()}）の受信トレイから、新しい順にメールを読み取ります。"
         "**読み取り専用**で開くため、既読が付いたりメールが変更されたりすることはありません。"
         "パスワードは保存しません。"
     )
     st.warning(
         "社内のメールアカウントは使わないでください（社内規定・個人情報の観点）。"
-        "取り込んだ内容は、解析・返信案作成のときに選択中のAI（Gemini / OpenAI / Claude）へ送信されます。"
+        f"取り込んだ内容は、解析・返信案作成のときに{display.ai_names_for_notice()}へ送信されます。"
     )
     # 取り込み成功後は、次の描画でアプリパスワードだけ空にする（宛先・件数は残す）
     if st.session_state.pop("imap_clear_password", False):
@@ -124,7 +125,7 @@ with tab_imap:
         (st.success if message[0] == "success" else st.info)(message[1])
 
     with st.form("imap_fetch"):
-        preset_labels = [preset.label for preset in mail_fetch.PRESETS] + ["その他（ホストを入力）"]
+        preset_labels = [display.mail_service_label(p) for p in mail_fetch.PRESETS] + ["その他（ホストを入力）"]
         c1, c2 = st.columns(2)
         preset_label = c1.selectbox("サービス", preset_labels, key="imap_service")
         custom_host = c2.text_input("IMAPホスト（その他の場合）", placeholder="imap.example.com", key="imap_host")
@@ -140,10 +141,14 @@ with tab_imap:
             "取り込む件数（新しい順）", 1, mail_fetch.MAX_FETCH, mail_fetch.DEFAULT_LIMIT, key="imap_limit"
         )
         for preset in mail_fetch.PRESETS:
-            st.caption(f"{preset.label}: {preset.help}")
+            if display.mail_service_help(preset):
+                st.caption(f"{display.mail_service_label(preset)}: {display.mail_service_help(preset)}")
         fetch_clicked = st.form_submit_button("📮 取り込む", key="imap_submit")
     if fetch_clicked:
-        host = next((p.host for p in mail_fetch.PRESETS if p.label == preset_label), custom_host.strip())
+        host = next(
+            (p.host for p in mail_fetch.PRESETS if display.mail_service_label(p) == preset_label),
+            custom_host.strip(),
+        )
         if not (host and imap_user and imap_password):
             st.error("ホスト・メールアドレス・アプリパスワードを入力してください。")
         else:

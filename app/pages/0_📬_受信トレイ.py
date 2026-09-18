@@ -19,6 +19,7 @@ if str(APP_DIR) not in sys.path:
 import streamlit as st
 
 import datasets
+import display
 import llm
 import reply_generator
 import thread as thread_mod
@@ -79,7 +80,7 @@ with col_ai:
         "使うAI",
         all_providers,
         index=all_providers.index(ui.provider()) if ui.provider() in all_providers else 0,
-        format_func=lambda p: llm.PROVIDERS[p].label + ("" if p in usable else "（キー未設定）"),
+        format_func=lambda p: display.provider_label(p) + ("" if p in usable else "（キー未設定）"),
         key="inbox_provider",
     )
     st.session_state[ui.K_PROVIDER] = chosen_provider
@@ -96,15 +97,10 @@ pending = [t for t in targets if thread_mod.target_key(t) not in found]
 
 with col_status:
     st.markdown(f"**{len(targets)}件**のスレッド ／ 解析済み **{len(found)}件**")
-    gateway = llm.base_url(chosen_provider)
-    st.caption(
-        f"{llm.PROVIDERS[chosen_provider].label} `{llm.default_model(chosen_provider)}`"
-        + (f" 経由 `{gateway}`" if gateway else "")
-    )
+    st.caption(f"{display.provider_label(chosen_provider)} {display.provider_suffix(chosen_provider)}".strip())
 
 if not ui.api_key_ready(chosen_provider):
-    spec = llm.spec_of(chosen_provider)
-    st.warning(f"{spec.label} のAPIキー（`{spec.key_env}`）が未設定のため、一覧の表示のみできます。")
+    st.warning(display.missing_key_message(chosen_provider) + "\n\n（一覧の表示のみできます）")
 
 if not targets:
     st.info("メールがありません。")
@@ -306,7 +302,7 @@ with right:
 if existing:
     st.markdown(f"#### ✍️ 「{subject}」への返信案（3つの書き方）")
     st.caption(
-        f"同じメール・同じAI（{llm.PROVIDERS[existing['provider']].label} `{existing['model']}`）で、"
+        f"同じメール・同じAI（{display.provider_with_model(existing['provider'], existing['model'])}）で、"
         "指示文だけを変えています。使う案の右上のアイコンでコピーできます。"
     )
     cols = st.columns(len(existing["items"]), gap="medium")
@@ -315,7 +311,8 @@ if existing:
             st.markdown(f"##### {item['label']}")
             st.caption(registry.DEMO_REPLY_SCENES.get(item["label"], ""))
             st.code(item["text"], language=None, wrap_lines=True)
-            st.caption(f"指示文 `{item['prompt_id']}`")
+            if not display.alias_enabled():
+                st.caption(f"指示文 `{item['prompt_id']}`")
 
 st.divider()
 st.caption(

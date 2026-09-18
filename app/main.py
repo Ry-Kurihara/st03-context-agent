@@ -16,6 +16,7 @@ if str(APP_DIR) not in sys.path:
 import streamlit as st
 
 import datasets
+import display
 import llm
 import ui_common as ui
 from prompts import registry
@@ -31,7 +32,7 @@ def main() -> None:
     usable = llm.available_providers()
     if not usable:
         st.error(
-            "APIキーが設定されていません（`GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` のいずれか）。\n\n"
+            "APIキーが設定されていません。\n\n"
             "- ローカル: `export GEMINI_API_KEY=...` を実行してから起動し直してください\n"
             '- Streamlit Cloud: App settings → Secrets に `GEMINI_API_KEY = "..."` を追加してください\n\n'
             "（設定しなくても画面は開けますが、解析・返信案生成はできません）"
@@ -39,8 +40,8 @@ def main() -> None:
     else:
         st.success(
             "利用できるAI: "
-            + " / ".join(llm.PROVIDERS[p].label for p in usable)
-            + "　（切り替えは各画面のサイドバー「モデル設定」から）"
+            + " / ".join(display.provider_label(p) for p in usable)
+            + "　（切り替えは受信トレイ上部、または各画面のサイドバー「モデル設定」から）"
         )
 
     st.subheader("📬 メールクライアントとして使う")

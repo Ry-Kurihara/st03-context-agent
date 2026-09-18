@@ -126,8 +126,8 @@ if pid_a == pid_b:
 
 st.divider()
 st.write(
-    f"返信案 **2案**（API呼び出し2回）／ {ui.provider_label()} "
-    f"`{ui.llm.default_model(ui.provider())}` ／ temperature `{ui.temperature()}`"
+    f"返信案 **2案**（API呼び出し2回）／ {ui.display.provider_with_model(ui.provider())}"
+    f" ／ temperature `{ui.temperature()}`"
 )
 st.caption("A/Bは同じAI・同じモデル・同じ設定で実行します（差が指示文の差だけになるように）。")
 ui.caution_box()
