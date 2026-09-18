@@ -170,3 +170,18 @@ def test_imap_form_keeps_password_when_fetch_fails(monkeypatch):
     assert not at.exception, [str(e) for e in at.exception]
     assert [w for w in at.text_input if w.key == "imap_password"][0].value == "wrong"
     assert any("ログインに失敗" in e.value for e in at.error)
+
+
+def test_imap_notice_asks_user_to_check_rules_without_prohibiting(monkeypatch):
+    """注意文は「使わないでください」ではなく、確認のうえ選んでもらう言い回しにする。"""
+    from pathlib import Path
+
+    from streamlit.testing.v1 import AppTest
+
+    page = Path(__file__).resolve().parents[1] / "app" / "pages" / "1_📥_メールデータ.py"
+    at = AppTest.from_file(str(page), default_timeout=60)
+    at.run()
+    notices = "\n".join([w.value for w in at.warning] + [c.value for c in at.caption])
+    assert "選択中の生成AI" in notices
+    assert "個人情報の取り扱いと社内規定をご確認のうえ" in notices
+    assert "社内のメールアカウントは使わないでください" not in notices
