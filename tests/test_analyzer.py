@@ -26,7 +26,7 @@ def _mail(mail_id="m1", received="2026-06-01T10:00:00", **extra):
 def test_analyze_thread_with_latest_prompt(fake_client_factory, v3_response):
     client = fake_client_factory([v3_response])
     th = thread_mod.group_threads([_mail("m1"), _mail("m2", "2026-06-04T10:00:00")])[0]
-    res = analyzer.analyze(th, prompt_id="analysis_v3_yoshida_20260729", client=client)
+    res = analyzer.analyze(th, prompt_id="analysis_v3_20260729", client=client)
 
     assert isinstance(res, schema.AnalysisResult)
     assert res.scores["accumulatedDissatisfaction"] == 0.5
@@ -40,8 +40,8 @@ def test_analyze_thread_with_latest_prompt(fake_client_factory, v3_response):
 
 def test_analyze_records_meta(fake_client_factory, v3_response):
     client = fake_client_factory([v3_response])
-    res = analyzer.analyze(_mail(), prompt_id="analysis_v3_yoshida_20260729", client=client, temperature=0.0)
-    assert res.meta["prompt_id"] == "analysis_v3_yoshida_20260729"
+    res = analyzer.analyze(_mail(), prompt_id="analysis_v3_20260729", client=client, temperature=0.0)
+    assert res.meta["prompt_id"] == "analysis_v3_20260729"
     assert res.meta["model"] == analyzer.DEFAULT_MODEL
     assert res.meta["temperature"] == 0.0
     assert res.meta["input_unit"] in {"thread", "mail"}
@@ -61,7 +61,7 @@ def test_analyze_single_mail_with_v0_prompt(fake_client_factory):
 
 def test_analyze_retries_once_on_unparsable_response(fake_client_factory, v3_response):
     client = fake_client_factory(["すみません、JSONは出せません。", v3_response])
-    res = analyzer.analyze(_mail(), prompt_id="analysis_v3_yoshida_20260729", client=client)
+    res = analyzer.analyze(_mail(), prompt_id="analysis_v3_20260729", client=client)
     assert res.priority_label == "高"
     assert len(client.calls) == 2
     assert "JSON" in client.calls[1]["contents"]
@@ -70,7 +70,7 @@ def test_analyze_retries_once_on_unparsable_response(fake_client_factory, v3_res
 def test_analyze_raises_after_retry_fails(fake_client_factory):
     client = fake_client_factory(["だめです", "やはりだめです"])
     with pytest.raises(schema.AnalysisParseError):
-        analyzer.analyze(_mail(), prompt_id="analysis_v3_yoshida_20260729", client=client)
+        analyzer.analyze(_mail(), prompt_id="analysis_v3_20260729", client=client)
     assert len(client.calls) == 2
 
 

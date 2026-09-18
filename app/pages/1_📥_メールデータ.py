@@ -12,12 +12,16 @@ import pandas as pd
 import streamlit as st
 
 import datasets
+import display
 import eml_loader
+import mail_fetch
 import thread as thread_mod
 import ui_common as ui
 
 ui.page_setup("メールデータ", "📥", caption="全員共通のサンプルを選ぶ／自分のメールを追加する")
 ui.sidebar_settings(show_unit=True, show_prompt=False)
+
+ui.nav_link("pages/0_📬_受信トレイ.py", "受信トレイに戻る", "📬")
 
 specs = datasets.list_datasets()
 if not specs:
@@ -101,7 +105,73 @@ st.caption(
     "全員で共有したい場合は、上の「JSONでダウンロード」で保存してSlackに投げてください（次回から同梱します）。"
 )
 
-tab_eml, tab_form = st.tabs([".eml ファイルを読み込む", "本文を貼り付ける"])
+tab_imap, tab_eml, tab_form = st.tabs(["📮 個人のメールアカウントから取り込む（IMAP）", ".eml ファイルを読み込む", "本文を貼り付ける"])
+
+with tab_imap:
+    st.caption(
+        f"個人のメールアカウント（{display.mail_services_for_notice()}）の受信トレイから、新しい順にメールを読み取ります。"
+        "**読み取り専用**で開くため、既読が付いたりメールが変更されたりすることはありません。"
+        "パスワードは保存しません。"
+    )
+    st.warning(
+        f"取り込んだ内容は、解析・返信案の作成時に、{display.ai_names_for_notice()}へ送信されます。"
+        "個人情報の取り扱いと社内規定をご確認のうえ、取り込むメールをお選びください。"
+    )
+    # 取り込み成功後は、次の描画でアプリパスワードだけ空にする（宛先・件数は残す）
+    if st.session_state.pop("imap_clear_password", False):
+        st.session_state["imap_password"] = ""
+    message = st.session_state.pop("imap_message", None)
+    if message:
+        (st.success if message[0] == "success" else st.info)(message[1])
+
+    with st.form("imap_fetch"):
+        preset_labels = [display.mail_service_label(p) for p in mail_fetch.PRESETS] + ["その他（ホストを入力）"]
+        c1, c2 = st.columns(2)
+        preset_label = c1.selectbox("サービス", preset_labels, key="imap_service")
+        custom_host = c2.text_input("IMAPホスト（その他の場合）", placeholder="imap.example.com", key="imap_host")
+        c3, c4 = st.columns(2)
+        imap_user = c3.text_input("メールアドレス", key="imap_user")
+        imap_password = c4.text_input(
+            "アプリパスワード",
+            type="password",
+            key="imap_password",
+            help="通常のログインパスワードではなく、アカウント設定で発行する「アプリパスワード」です。取り込みに成功すると消えます。",
+        )
+        imap_limit = st.slider(
+            "取り込む件数（新しい順）", 1, mail_fetch.MAX_FETCH, mail_fetch.DEFAULT_LIMIT, key="imap_limit"
+        )
+        for preset in mail_fetch.PRESETS:
+            if display.mail_service_help(preset):
+                st.caption(f"{display.mail_service_label(preset)}: {display.mail_service_help(preset)}")
+        fetch_clicked = st.form_submit_button("📮 取り込む", key="imap_submit")
+    if fetch_clicked:
+        host = next(
+            (p.host for p in mail_fetch.PRESETS if display.mail_service_label(p) == preset_label),
+            custom_host.strip(),
+        )
+        if not (host and imap_user and imap_password):
+            st.error("ホスト・メールアドレス・アプリパスワードを入力してください。")
+        else:
+            with st.spinner(f"{host} から取り込み中…"):
+                try:
+                    fetched = mail_fetch.fetch_recent(host, imap_user, imap_password, limit=imap_limit)
+                except mail_fetch.MailFetchError as exc:
+                    st.error(str(exc))
+                    fetched = None
+            if fetched is not None:
+                # 成功（0通でも接続はできている）のでパスワードだけ伏せる。入力し直さずに続けて取り込める
+                st.session_state["imap_clear_password"] = True
+                if fetched:
+                    st.session_state[ui.K_EXTRA] = ui.extra_mails() + datasets.normalize_all(fetched, prefix="imap")
+                    st.session_state["imap_message"] = (
+                        "success",
+                        f"{len(fetched)}通を取り込みました。"
+                        "「📬 受信トレイ」のメールボックスで「📥 取り込んだメール」を選ぶと表示されます。",
+                    )
+                else:
+                    st.session_state["imap_message"] = ("info", "受信トレイにメールがありませんでした。")
+                st.rerun()  # パスワード欄を空にするため（ウィジェットの値は次の描画でしか変えられない）
+
 
 with tab_eml:
     uploaded = st.file_uploader(".eml ファイル（複数選択できます）", type=["eml"], accept_multiple_files=True)

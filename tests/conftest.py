@@ -39,6 +39,15 @@ class FakeClient:
         self.models = _FakeModels(self)
 
 
+@pytest.fixture(autouse=True)
+def _ignore_local_streamlit_secrets(monkeypatch):
+    """手元の `.streamlit/secrets.toml`（実キー）をテストが読まないようにする。キーは環境変数で与える。"""
+    import llm
+
+    monkeypatch.setattr(llm, "_streamlit_secret", lambda name: None)
+    llm._clients.clear()
+
+
 @pytest.fixture
 def fake_client_factory():
     return FakeClient

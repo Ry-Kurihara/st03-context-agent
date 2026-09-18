@@ -1,0 +1,11 @@
+# 画面収録（デモ動画）で見やすいように、ライトテーマ・最小ツールバーに固定する。
+# `streamlit run app/main.py` をリポジトリ直下で実行したときに読み込まれる。
+[theme]
+base = "light"
+primaryColor = "#0079C2"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

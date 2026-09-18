@@ -33,10 +33,10 @@ class PromptSpec:
 
 _BUILTIN: tuple[PromptSpec, ...] = (
     PromptSpec(
-        id="analysis_v3_yoshida_20260729",
-        label="【最新】吉田さん改良版（2026-07-29）",
+        id="analysis_v3_20260729",
+        label="【最新】改良版（2026-07-29）",
         kind="analysis",
-        file="analysis_v3_yoshida_20260729.md",
+        file="analysis_v3_20260729.md",
         input_unit="thread",
         schema_version="v3",
         tokens=("EMAIL_THREAD",),
@@ -62,7 +62,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案① 感情の言語化（廣瀬さん・平井さん）",
+        group="案① 感情の言語化",
     ),
     PromptSpec(
         id="reply_r1_verbalize",
@@ -72,7 +72,29 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案① 感情の言語化（廣瀬さん・平井さん）",
+        group="案① 感情の言語化",
+    ),
+    PromptSpec(
+        id="reply_r1_plain_v2",
+        label="案①-A 感情言語化なし・配慮はにじませる（0909改訂版）",
+        kind="reply",
+        file="reply_r1_plain_v2.md",
+        input_unit="-",
+        schema_version="-",
+        tokens=("PARAMETERS", "EMAIL"),
+        group="案① 感情の言語化（0909改訂版）",
+        notes="配慮は感情への言及ではなく、対応の誠実さ・先回りした説明・次の行動の明示で表現する。",
+    ),
+    PromptSpec(
+        id="reply_r1_verbalize_v2",
+        label="案①-B 感情言語化あり・断定しない（0909改訂版）",
+        kind="reply",
+        file="reply_r1_verbalize_v2.md",
+        input_unit="-",
+        schema_version="-",
+        tokens=("PARAMETERS", "EMAIL"),
+        group="案① 感情の言語化（0909改訂版）",
+        notes="共感→状況整理→対応策提示の順。避ける表現（強い断定・共感直後の打ち消し等）を明記。",
     ),
     PromptSpec(
         id="reply_r2_fact",
@@ -82,7 +104,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案② 共感の出し方（赤木さん）",
+        group="案② 共感の出し方",
     ),
     PromptSpec(
         id="reply_r2_empathy_first",
@@ -92,7 +114,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案② 共感の出し方（赤木さん）",
+        group="案② 共感の出し方",
     ),
     PromptSpec(
         id="reply_r2_empathy_organized",
@@ -102,7 +124,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案② 共感の出し方（赤木さん）",
+        group="案② 共感の出し方",
     ),
     PromptSpec(
         id="reply_r3_no_hypothesis",
@@ -112,7 +134,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案③ 背景仮説の提示（大淵さん）",
+        group="案③ 背景仮説の提示",
     ),
     PromptSpec(
         id="reply_r3_hypothesis",
@@ -122,7 +144,7 @@ _BUILTIN: tuple[PromptSpec, ...] = (
         input_unit="-",
         schema_version="-",
         tokens=("PARAMETERS", "EMAIL"),
-        group="案③ 背景仮説の提示（大淵さん）",
+        group="案③ 背景仮説の提示",
     ),
     PromptSpec(
         id="reply_blank",
@@ -137,9 +159,23 @@ _BUILTIN: tuple[PromptSpec, ...] = (
     ),
 )
 
-DEFAULT_ANALYSIS_PROMPT = "analysis_v3_yoshida_20260729"
+DEFAULT_ANALYSIS_PROMPT = "analysis_v3_20260729"
 DEFAULT_REPLY_PROMPT_A = "reply_r1_plain"
 DEFAULT_REPLY_PROMPT_B = "reply_r1_verbalize"
+
+# 受信トレイ（デモ）の返信3択。画面には研究用語ではなく利用者の言葉を出す。
+DEMO_REPLY_PROMPTS: tuple[tuple[str, str], ...] = (
+    ("簡潔に伝える", "reply_r1_plain_v2"),
+    ("配慮を添える", "reply_r1_verbalize_v2"),
+    ("配慮＋論点整理", "reply_r2_empathy_organized"),
+)
+
+# 各書き方が向く場面（最終報告（３）の結論に対応させる）
+DEMO_REPLY_SCENES: dict[str, str] = {
+    "簡潔に伝える": "通常の確認・進捗連絡向け。感情には触れず、対応方針・連絡予定・見通しで配慮を示します。",
+    "配慮を添える": "お詫び・念のための確認・相手への寄り添いが必要な場面向け。受け止めてから対応へつなぎます。",
+    "配慮＋論点整理": "行き違いや未解決事項がある場面向け。共感のうえで経緯と論点を整理します（検証で最高評価）。",
+}
 
 
 def prompts_dir() -> Path:

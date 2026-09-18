@@ -56,11 +56,16 @@ class FakeOpenAIClient:
 def _clear_keys(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
+    for name in ("OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
 
 
 def test_providers_are_registered():
-    assert set(llm.PROVIDERS) == {"gemini", "openai"}
+    assert set(llm.PROVIDERS) == {"gemini", "openai", "anthropic"}
+    assert llm.PROVIDERS["anthropic"].key_env == "ANTHROPIC_API_KEY"
     assert llm.PROVIDERS["gemini"].key_env == "GEMINI_API_KEY"
     assert llm.PROVIDERS["openai"].key_env == "OPENAI_API_KEY"
 
@@ -130,7 +135,7 @@ def test_analyze_with_openai_provider():
         "received_at": "2026-06-01T10:00:00",
         "body": "本文",
     }
-    result = analyzer.analyze(mail, prompt_id="analysis_v3_yoshida_20260729", client=client, provider="openai")
+    result = analyzer.analyze(mail, prompt_id="analysis_v3_20260729", client=client, provider="openai")
     assert isinstance(result, schema.AnalysisResult)
     assert result.priority_label == "高"
     assert result.meta["provider"] == "openai"
@@ -176,3 +181,229 @@ def test_missing_key_raises_with_clear_message(monkeypatch):
     with pytest.raises(llm.MissingApiKeyError) as exc:
         llm.get_client("openai")
     assert "OPENAI_API_KEY" in str(exc.value)
+
+
+# --------------------------------------------------------------------------
+# Anthropic（Claude）
+# --------------------------------------------------------------------------
+class _Block:
+    def __init__(self, type_: str, text: str = "") -> None:
+        self.type = type_
+        self.text = text
+
+
+class _FakeAnthropicResponse:
+    def __init__(self, texts: list[str], stop_reason: str = "end_turn") -> None:
+        self.content = [_Block("thinking")] + [_Block("text", t) for t in texts]
+        self.stop_reason = stop_reason
+
+
+class _FakeAnthropicMessages:
+    def __init__(self, owner: "FakeAnthropicClient") -> None:
+        self._owner = owner
+
+    def create(self, **kwargs):
+        self._owner.calls.append(kwargs)
+        if not self._owner.responses:
+            raise AssertionError("フェイククライアントの応答が足りません")
+        return self._owner.responses.pop(0)
+
+
+class _FakeAnthropicBeta:
+    def __init__(self, owner: "FakeAnthropicClient") -> None:
+        self.messages = _FakeAnthropicMessages(owner)
+
+
+class FakeAnthropicClient:
+    """anthropic SDK と同じ呼び出し方ができるテスト用スタブ。"""
+
+    def __init__(self, responses: list[_FakeAnthropicResponse]) -> None:
+        self.responses = list(responses)
+        self.calls: list[dict] = []
+        self.beta = _FakeAnthropicBeta(self)
+
+
+def test_anthropic_default_model_is_opus5_and_overridable(monkeypatch):
+    assert llm.default_model("anthropic") == "claude-opus-5"
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-sonnet-5")
+    assert llm.default_model("anthropic") == "claude-sonnet-5"
+
+
+def test_available_providers_includes_anthropic(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    assert llm.available_providers() == ["anthropic"]
+    assert llm.default_provider() == "anthropic"
+
+
+def test_call_text_with_anthropic_client_joins_text_blocks():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["こんにちは", "、世界"])])
+    text = llm.call_text("プロンプト", client=client, provider="anthropic", model_name="claude-opus-5", temperature=0.0)
+    assert text == "こんにちは、世界"
+    call = client.calls[0]
+    assert call["model"] == "claude-opus-5"
+    assert call["messages"] == [{"role": "user", "content": "プロンプト"}]
+    assert call["max_tokens"] >= 4000
+    # Opus 5 以降は temperature 等のサンプリング指定が 400 になるため送らない
+    assert "temperature" not in call
+    # 拒否時の自動フォールバック（サーバー側）を有効にしている
+    assert call["fallbacks"] == "default"
+    assert "server-side-fallback-2026-07-01" in call["betas"]
+
+
+def test_call_text_with_anthropic_non_opus_model_has_no_fallback():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["ok"])])
+    llm.call_text("x", client=client, provider="anthropic", model_name="claude-haiku-4-5")
+    assert "fallbacks" not in client.calls[0]
+
+
+def test_call_text_with_anthropic_refusal_raises():
+    client = FakeAnthropicClient([_FakeAnthropicResponse([], stop_reason="refusal")])
+    with pytest.raises(llm.LlmRefusalError):
+        llm.call_text("x", client=client, provider="anthropic", model_name="claude-opus-5")
+
+
+def test_call_text_infers_anthropic_from_client_shape():
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["C"])])
+    assert llm.infer_provider(client) == "anthropic"
+    assert llm.call_text("x", client=client) == "C"
+
+
+def test_generate_reply_set_with_anthropic_provider():
+    client = FakeAnthropicClient([_FakeAnthropicResponse([t]) for t in ("1", "2", "3")])
+    results = reply_generator.generate_reply_set(
+        [("a", "A{{EMAIL}}"), ("b", "B{{EMAIL}}"), ("c", "C{{EMAIL}}")],
+        mail_text="本文",
+        parameters={},
+        client=client,
+        provider="anthropic",
+        max_workers=1,
+    )
+    assert [r.text for r in results] == ["1", "2", "3"]
+    assert {r.meta["model"] for r in results} == {"claude-opus-5"}
+
+
+# --------------------------------------------------------------------------
+# 接続先の差し替え（社内ゲートウェイ経由で使う場合）
+# --------------------------------------------------------------------------
+def test_client_options_without_base_url(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    assert llm.client_options("anthropic") == {"api_key": "dummy"}
+
+
+def test_client_options_with_base_url(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    assert llm.client_options("anthropic") == {
+        "api_key": "dummy",
+        "base_url": "https://gateway.example.com",
+    }
+
+
+def test_client_options_for_openai_base_url(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-dummy")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example.com/v1")
+    assert llm.client_options("openai")["base_url"] == "https://gateway.example.com/v1"
+
+
+def test_client_options_requires_key(monkeypatch):
+    with pytest.raises(llm.MissingApiKeyError):
+        llm.client_options("anthropic")
+
+
+def test_base_url_is_reported_for_display(monkeypatch):
+    assert llm.base_url("anthropic") is None
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    assert llm.base_url("anthropic") == "https://gateway.example.com"
+
+
+def test_anthropic_skips_beta_params_when_gateway_is_used(monkeypatch):
+    """社内ゲートウェイ経由のときは beta パラメータを送らない（未対応で400になり得るため）。"""
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://gateway.example.com")
+    client = FakeAnthropicClient([_FakeAnthropicResponse(["ok"])])
+    llm.call_text("x", client=client, provider="anthropic", model_name="claude-opus-5")
+    assert "fallbacks" not in client.calls[0]
+    assert "betas" not in client.calls[0]
+
+
+# --------------------------------------------------------------------------
+# 共通キー方式（社内ゲートウェイ経由で3プロバイダをまとめて設定する）
+# --------------------------------------------------------------------------
+GATEWAY = "https://gateway.example.com"
+
+
+def test_gateway_base_url_applies_to_every_provider(monkeypatch):
+    """共通の接続先1つで3プロバイダぶんの base_url が決まる（パスの違いは内部で吸収）。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    assert llm.base_url("openai") == f"{GATEWAY}/v1"      # OpenAI SDK は /chat/completions を足す
+    assert llm.base_url("anthropic") == GATEWAY           # Anthropic SDK は /v1/messages を足す
+    assert llm.base_url("gemini") == GATEWAY              # google-genai は /v1beta/... を足す
+
+
+def test_provider_base_url_overrides_gateway(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.example/v1")
+    assert llm.base_url("openai") == "https://api.openai.example/v1"
+
+
+def test_gateway_key_is_shared_by_every_provider(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    assert llm.available_providers() == ["gemini", "openai", "anthropic"]
+    for pid in ("gemini", "openai", "anthropic"):
+        assert llm.client_options(pid) == {"api_key": "gw-key", "base_url": llm.base_url(pid)}
+
+
+def test_gateway_key_is_not_used_against_official_endpoints(monkeypatch):
+    """接続先がゲートウェイでないプロバイダには、共通キーを使わない（社内キーの誤送信を防ぐ）。"""
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")  # 接続先の指定なし
+    assert llm.available_providers() == []
+    with pytest.raises(llm.MissingApiKeyError):
+        llm.client_options("openai")
+
+
+def test_key_pairs_with_the_endpoint_it_is_sent_to(monkeypatch):
+    """キーは「送信先」とセットで選ぶ。
+
+    公式エンドポイント向けのキーが残っていても、接続先がゲートウェイなら共通キーを使う
+    （逆をやると 401 になる。実際に踏んだ）。
+    """
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "official-key")
+    assert llm.client_options("gemini") == {"api_key": "gw-key", "base_url": GATEWAY}
+
+
+def test_provider_key_is_used_for_official_endpoint(monkeypatch):
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")  # 接続先の指定なし＝公式
+    monkeypatch.setenv("GEMINI_API_KEY", "official-key")
+    assert llm.client_options("gemini") == {"api_key": "official-key"}
+
+
+def test_provider_key_is_used_when_provider_sets_its_own_base_url(monkeypatch):
+    """プロバイダ個別に接続先を指定した場合は、そのプロバイダのキーを優先する。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://other.example/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "own-key")
+    assert llm.client_options("openai") == {"api_key": "own-key", "base_url": "https://other.example/v1"}
+
+
+def test_gemini_client_receives_base_url_as_http_options(monkeypatch):
+    """google-genai は base_url を http_options で受け取る。"""
+    monkeypatch.setenv("LLM_GATEWAY_BASE_URL", GATEWAY)
+    monkeypatch.setenv("LLM_GATEWAY_API_KEY", "gw-key")
+    captured: dict = {}
+
+    class FakeGenAIClient:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    from google import genai
+
+    monkeypatch.setattr(genai, "Client", FakeGenAIClient)
+    llm._clients.clear()
+    llm.get_client("gemini")
+    assert captured["api_key"] == "gw-key"
+    assert captured["http_options"] == {"base_url": GATEWAY}
+    assert "base_url" not in captured
+    llm._clients.clear()

@@ -1,9 +1,15 @@
-"""LLM呼び出しの共通部（Gemini / OpenAI の切り替え）。
+"""LLM呼び出しの共通部（Gemini / OpenAI / Anthropic Claude の切り替え）。
 
 - APIキーは環境変数、無ければ Streamlit Secrets から読む
+- 接続先は `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` / `GEMINI_BASE_URL` で差し替えられる
+  （未設定なら各社の公式エンドポイント）
+- 3社まとめてゲートウェイ経由にする場合は `LLM_GATEWAY_BASE_URL` と `LLM_GATEWAY_API_KEY` の2つでよい。
+  SDKごとに足すパスが違う（OpenAIは `/chat/completions`、Anthropicは `/v1/messages`、
+  google-genaiは `/v1beta/...`）ため、その差はここで吸収する
   （Streamlit Cloud では Secrets が環境変数にも入るが、念のため両方見る）
 - クライアント生成は遅延（テストではフェイククライアントを注入する）
 - `temperature` は既定 0.0。同じ入力での出力の揺れを抑えるため。
+  （Claude Opus 5 以降はサンプリング指定を受け付けないため、Claude には送らない）
 """
 from __future__ import annotations
 
@@ -15,6 +21,16 @@ DEFAULT_TEMPERATURE = 0.0
 
 PROVIDER_GEMINI = "gemini"
 PROVIDER_OPENAI = "openai"
+PROVIDER_ANTHROPIC = "anthropic"
+
+ANTHROPIC_MAX_TOKENS = 16000
+# 安全性の判定で応答を拒否された場合に、サーバー側で別モデルに自動で切り替える
+ANTHROPIC_FALLBACK_BETA = "server-side-fallback-2026-07-01"
+ANTHROPIC_FALLBACK_MODELS = ("claude-opus-5", "claude-fable-5-1")
+
+# 3プロバイダ共通の設定（社内ゲートウェイ経由で使うとき）
+GATEWAY_KEY_ENV = "LLM_GATEWAY_API_KEY"
+GATEWAY_BASE_URL_ENV = "LLM_GATEWAY_BASE_URL"
 
 
 @dataclass(frozen=True)
@@ -23,9 +39,12 @@ class ProviderSpec:
     label: str
     key_env: str
     model_env: str
+    base_url_env: str
     default_model: str
     package: str
     note: str = ""
+    # 共通の接続先（LLM_GATEWAY_BASE_URL）に足すパス。SDKが自分で足すぶんとの差を埋める
+    gateway_path: str = ""
 
 
 PROVIDERS: dict[str, ProviderSpec] = {
@@ -34,6 +53,7 @@ PROVIDERS: dict[str, ProviderSpec] = {
         label="Gemini（Google AI Studio）",
         key_env="GEMINI_API_KEY",
         model_env="GEMINI_MODEL",
+        base_url_env="GEMINI_BASE_URL",  # SDKが `/v1beta/...` を足すので、ホストだけを渡す
         default_model="gemini-2.5-flash",
         package="google-genai",
         note="研究会の既定。プロジェクト単位のSpend Capで上限管理。",
@@ -43,9 +63,21 @@ PROVIDERS: dict[str, ProviderSpec] = {
         label="OpenAI",
         key_env="OPENAI_API_KEY",
         model_env="OPENAI_MODEL",
+        base_url_env="OPENAI_BASE_URL",
+        gateway_path="/v1",  # SDKが足すのは `/chat/completions` までなので `/v1` が要る
         default_model="gpt-4o-mini",
         package="openai",
         note="モデル名は OPENAI_MODEL で上書きできます（既定が廃止された場合はここを変更）。",
+    ),
+    PROVIDER_ANTHROPIC: ProviderSpec(
+        id=PROVIDER_ANTHROPIC,
+        label="Claude（Anthropic）",
+        key_env="ANTHROPIC_API_KEY",
+        model_env="ANTHROPIC_MODEL",
+        base_url_env="ANTHROPIC_BASE_URL",
+        default_model="claude-opus-5",
+        package="anthropic",
+        note="モデル名は ANTHROPIC_MODEL で上書きできます（例: claude-sonnet-5）。",
     ),
 }
 
@@ -63,11 +95,20 @@ class UnsupportedProviderError(ValueError):
     """未対応のプロバイダを指定された。"""
 
 
+class LlmRefusalError(RuntimeError):
+    """モデルが応答を拒否した（安全性の判定など）。"""
+
+
 def get_secret(name: str) -> str | None:
     """環境変数 → Streamlit Secrets の順に探す。無ければ None。"""
     value = os.environ.get(name)
     if value:
         return value
+    return _streamlit_secret(name)
+
+
+def _streamlit_secret(name: str) -> str | None:
+    """`.streamlit/secrets.toml` の値（テストでは手元のキーを拾わないよう差し替える）。"""
     try:  # Streamlit の外（テスト・CLI）でも動くように保護する
         import streamlit as st
 
@@ -85,7 +126,7 @@ def spec_of(provider: str) -> ProviderSpec:
 
 
 def has_key(provider: str) -> bool:
-    return bool(get_secret(spec_of(provider).key_env))
+    return bool(api_key_of(provider))
 
 
 def available_providers() -> list[str]:
@@ -94,11 +135,11 @@ def available_providers() -> list[str]:
 
 
 def default_provider() -> str:
-    """環境変数 LLM_PROVIDER → キーがある方（Gemini優先）。"""
+    """環境変数 LLM_PROVIDER → キーがあるもの（Gemini → OpenAI → Claude の順）。"""
     forced = (os.environ.get("LLM_PROVIDER") or "").strip().lower()
     if forced in PROVIDERS:
         return forced
-    for pid in (PROVIDER_GEMINI, PROVIDER_OPENAI):
+    for pid in (PROVIDER_GEMINI, PROVIDER_OPENAI, PROVIDER_ANTHROPIC):
         if has_key(pid):
             return pid
     return PROVIDER_GEMINI
@@ -116,6 +157,52 @@ def has_api_key(provider: str | None = None) -> bool:
     return bool(available_providers())
 
 
+def base_url(provider: str | None = None) -> str | None:
+    """接続先。プロバイダ個別の指定 → 共通の指定 → None（＝公式エンドポイント）の順。"""
+    spec = spec_of(provider or default_provider())
+    own = get_secret(spec.base_url_env) if spec.base_url_env else None
+    if own:
+        return own
+    gateway = get_secret(GATEWAY_BASE_URL_ENV)
+    return gateway.rstrip("/") + spec.gateway_path if gateway else None
+
+
+def api_key_of(provider: str) -> str | None:
+    """APIキー。**送信先とセットで**選ぶ。
+
+    - 接続先が共通の指定（`LLM_GATEWAY_BASE_URL`）から来ているなら、共通キーを使う
+      （公式エンドポイント用のキーが残っていても、そちらをゲートウェイに送らない）
+    - 接続先を個別に指定している／公式エンドポイントなら、そのプロバイダのキーを使う
+    - 公式エンドポイントに共通キーは使わない（社内キーの誤送信を防ぐ）
+    """
+    spec = spec_of(provider)
+    own = get_secret(spec.key_env)
+    gateway_key = get_secret(GATEWAY_KEY_ENV)
+    own_base_url = get_secret(spec.base_url_env) if spec.base_url_env else None
+
+    if own_base_url:
+        return own or gateway_key
+    if get_secret(GATEWAY_BASE_URL_ENV):
+        return gateway_key or own
+    return own
+
+
+def client_options(provider: str | None = None) -> dict[str, str]:
+    """SDKのクライアントに渡す引数（APIキーと、あれば接続先）。"""
+    spec = spec_of(provider or default_provider())
+    api_key = api_key_of(spec.id)
+    if not api_key:
+        raise MissingApiKeyError(
+            f"{spec.label} を使うには `{spec.key_env}` が必要です。"
+            f"（ローカルなら export、Streamlit Cloud なら App settings → Secrets に設定してください）"
+        )
+    options = {"api_key": api_key}
+    override = base_url(spec.id)
+    if override:
+        options["base_url"] = override
+    return options
+
+
 def get_client(provider: str | None = None) -> Any:
     """プロバイダのクライアント（プロセス内で使い回す）。"""
     pid = provider or default_provider()
@@ -123,17 +210,25 @@ def get_client(provider: str | None = None) -> Any:
     if pid in _clients:
         return _clients[pid]
 
-    api_key = get_secret(spec.key_env)
-    if not api_key:
-        raise MissingApiKeyError(
-            f"{spec.label} を使うには `{spec.key_env}` が必要です。"
-            f"（ローカルなら export、Streamlit Cloud なら App settings → Secrets に設定してください）"
-        )
+    options = client_options(pid)
 
     if pid == PROVIDER_GEMINI:
         from google import genai  # 遅延import
 
-        _clients[pid] = genai.Client(api_key=api_key)
+        # google-genai は base_url を http_options で受け取る
+        gemini_options = dict(options)
+        endpoint = gemini_options.pop("base_url", None)
+        if endpoint:
+            gemini_options["http_options"] = {"base_url": endpoint}
+        _clients[pid] = genai.Client(**gemini_options)
+    elif pid == PROVIDER_ANTHROPIC:
+        try:
+            import anthropic  # 遅延import
+        except ImportError as exc:  # pragma: no cover - 環境依存
+            raise MissingApiKeyError(
+                "anthropic パッケージが入っていません。`pip install -r requirements.txt` を実行してください。"
+            ) from exc
+        _clients[pid] = anthropic.Anthropic(**options)
     else:
         try:
             from openai import OpenAI  # 遅延import
@@ -141,7 +236,7 @@ def get_client(provider: str | None = None) -> Any:
             raise MissingApiKeyError(
                 "openai パッケージが入っていません。`pip install -r requirements.txt` を実行してください。"
             ) from exc
-        _clients[pid] = OpenAI(api_key=api_key)
+        _clients[pid] = OpenAI(**options)
     return _clients[pid]
 
 
@@ -151,6 +246,8 @@ def infer_provider(client: Any) -> str | None:
         return PROVIDER_GEMINI
     if hasattr(client, "chat") and hasattr(client.chat, "completions"):
         return PROVIDER_OPENAI
+    if hasattr(client, "beta") and hasattr(client.beta, "messages"):
+        return PROVIDER_ANTHROPIC
     return None
 
 
@@ -177,6 +274,10 @@ def call_text(
         )
         return response.text or ""
 
+    if provider == PROVIDER_ANTHROPIC:
+        # 社内ゲートウェイ経由のときは beta パラメータを送らない（未対応で400になり得る）
+        return _call_anthropic(client, contents, model, allow_beta=base_url(provider) is None)
+
     response = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": contents}],
@@ -185,3 +286,21 @@ def call_text(
     if not response.choices:
         return ""
     return response.choices[0].message.content or ""
+
+
+def _call_anthropic(client: Any, contents: str, model: str, *, allow_beta: bool = True) -> str:
+    """Claude（Messages API）。temperature は送らない（Opus 5 以降は 400 になる）。"""
+    params: dict[str, Any] = {
+        "model": model,
+        "max_tokens": ANTHROPIC_MAX_TOKENS,
+        "messages": [{"role": "user", "content": contents}],
+    }
+    if allow_beta and model in ANTHROPIC_FALLBACK_MODELS:
+        params["betas"] = [ANTHROPIC_FALLBACK_BETA]
+        params["fallbacks"] = "default"
+    response = client.beta.messages.create(**params)
+    if getattr(response, "stop_reason", None) == "refusal":
+        raise LlmRefusalError("Claude が応答を拒否しました。入力内容を見直してください。")
+    return "".join(
+        block.text for block in (response.content or []) if getattr(block, "type", "") == "text"
+    )

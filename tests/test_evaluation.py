@@ -44,11 +44,11 @@ def test_pair_log_row_has_full_schema():
     row = evaluation.pair_log_row(
         mail_id="mail-001",
         thread_id="T-A",
-        analysis_prompt_id="analysis_v3_yoshida_20260729",
+        analysis_prompt_id="analysis_v3_20260729",
         reply_prompt_a_id="reply_r1_plain",
         reply_prompt_b_id="reply_r1_verbalize",
         blind=True,
-        evaluator="廣瀬",
+        evaluator="評価者A",
         winner="B",
         scores_a={"intent": 3, "relation": 2, "readability": 4, "completeness": 3, "sendable": 3},
         scores_b={"intent": 4, "relation": 5, "readability": 4, "completeness": 4, "sendable": 5},

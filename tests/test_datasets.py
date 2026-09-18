@@ -13,7 +13,7 @@ REQUIRED_KEYS = {"id", "thread_id", "subject", "sender", "to", "cc", "received_a
 
 def test_builtin_datasets_are_registered():
     ids = [spec.id for spec in datasets.list_datasets()]
-    assert "akagi_demo" in ids
+    assert "relation_mixed" in ids
     assert "mixed_emotion_50" in ids
     assert "sample_v2" in ids
 
@@ -32,13 +32,13 @@ def test_all_builtin_datasets_load_with_required_keys():
 
 def test_dataset_counts():
     # 良好10通＋険悪5通（險悪シートの6〜10行目は良好と同一文面のため除外している）
-    assert len(datasets.load_dataset("akagi_demo")) == 15
+    assert len(datasets.load_dataset("relation_mixed")) == 15
     assert len(datasets.load_dataset("mixed_emotion_50")) == 50
     assert len(datasets.load_dataset("sample_v2")) >= 20
 
 
-def test_akagi_dataset_has_relationship_category():
-    mails = datasets.load_dataset("akagi_demo")
+def test_relation_mixed_dataset_has_relationship_category():
+    mails = datasets.load_dataset("relation_mixed")
     categories = {m.get("category") for m in mails}
     assert categories == {"関係良好", "関係険悪"}
 

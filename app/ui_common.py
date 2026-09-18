@@ -13,6 +13,7 @@ import streamlit as st
 
 import analyzer
 import datasets
+import display
 import llm
 import scoring
 import thread as thread_mod
@@ -40,6 +41,8 @@ K_PAIR_LOG = "pair_log"
 K_STAGE1_LOG = "stage1_log"
 
 DEFAULT_DATASET = "sample_v2"
+# 受信トレイの「📥 取り込んだメール」を表す擬似データセットID
+EXTRA_MAILBOX = "__extra__"
 
 CAUTION = """
 ⚠️ **生成AIの回答は、同じ入力でも実行するたびに少し変わります**（0.05程度のスコア差はよく起きます）。
@@ -52,17 +55,30 @@ CAUTION = """
 # --------------------------------------------------------------------------
 # ページ共通
 # --------------------------------------------------------------------------
-def page_setup(title: str, icon: str = "📨", *, caption: str = "") -> None:
+def page_setup(title: str, icon: str = "📨", *, caption: str = "", sidebar: str = "expanded") -> None:
     st.set_page_config(
         page_title=f"{title} | ST03",
         page_icon=icon,
         layout="wide",
-        # 画面が狭いとサイドバー（＝ページ切り替え）が隠れて迷うため、常に開いた状態で始める
-        initial_sidebar_state="expanded",
+        # 画面が狭いとサイドバー（＝ページ切り替え）が隠れて迷うため、既定は開いた状態で始める。
+        # 受信トレイ（デモ）だけは collapsed にして、研究用ページの一覧を映さない。
+        initial_sidebar_state=sidebar,
     )
     st.title(f"{icon} {title}")
     if caption:
         st.caption(caption)
+
+
+def nav_link(page: str, label: str, icon: str = "") -> None:
+    """別ページへのリンク。
+
+    `st.page_link` は「ページ単体を直接実行したとき」（テストの AppTest など）には
+    ページ一覧が無く KeyError になる。本体の動作には影響しないので、その場合は黙って省く。
+    """
+    try:
+        st.page_link(page, label=label, icon=icon or None)
+    except Exception:  # pragma: no cover - AppTest 実行時のみ通る
+        pass
 
 
 def provider() -> str:
@@ -70,10 +86,8 @@ def provider() -> str:
 
 
 def provider_label(pid: str | None = None) -> str:
-    try:
-        return llm.spec_of(pid or provider()).label
-    except llm.UnsupportedProviderError:
-        return str(pid)
+    """画面に出すプロバイダ名（デモ表示モードでは商標名を伏せる）。"""
+    return display.provider_label(pid or provider())
 
 
 def api_key_ready(pid: str | None = None) -> bool:
@@ -83,12 +97,7 @@ def api_key_ready(pid: str | None = None) -> bool:
 def require_api_key() -> None:
     pid = provider()
     if not api_key_ready(pid):
-        spec = llm.spec_of(pid)
-        st.error(
-            f"{spec.label} のAPIキー（`{spec.key_env}`）が設定されていません。\n\n"
-            f"- ローカル: `export {spec.key_env}=...` を実行してから起動し直してください\n"
-            f"- Streamlit Cloud: App settings → Secrets に `{spec.key_env} = \"...\"` を追加してください"
-        )
+        st.error(display.missing_key_message(pid))
         st.stop()
 
 
@@ -114,6 +123,32 @@ def get_mails() -> list[dict[str, Any]]:
     except (KeyError, FileNotFoundError):
         base = datasets.load_dataset(DEFAULT_DATASET)
     return datasets.merge_datasets(base, extra_mails())
+
+
+def mailbox_label(mailbox_id: str, count: int | None = None) -> str:
+    """メールボックスの表示名。「追加したメールデータ」は0通でも選べるようにしてある。"""
+    if mailbox_id == EXTRA_MAILBOX:
+        n = len(extra_mails()) if count is None else count
+        return f"📥 追加したメールデータ（{n}通）"
+    try:
+        return datasets.get_spec(mailbox_id).label
+    except KeyError:
+        return mailbox_id
+
+
+def mailbox_mails(mailbox_id: str) -> list[dict[str, Any]]:
+    """メールボックス1つぶんのメール。
+
+    受信トレイでは「同梱サンプル」と「取り込んだメール」を**混ぜない**。
+    混ぜると、受信日の新しい取り込みメールが基準日になり、
+    期間フィルタ（直近1ヶ月）でサンプル側が全部落ちてしまう。
+    """
+    if mailbox_id == EXTRA_MAILBOX:
+        return extra_mails()
+    try:
+        return datasets.load_dataset(mailbox_id)
+    except (KeyError, FileNotFoundError):
+        return datasets.load_dataset(DEFAULT_DATASET)
 
 
 def window_days() -> int | None:
@@ -231,15 +266,16 @@ def sidebar_settings(*, show_unit: bool = True, show_prompt: bool = True) -> Non
                 "使うAI（プロバイダ）",
                 all_providers,
                 index=all_providers.index(current_provider) if current_provider in all_providers else 0,
-                format_func=lambda p: llm.PROVIDERS[p].label + ("" if p in usable else "（キー未設定）"),
+                format_func=lambda p: display.provider_label(p) + ("" if p in usable else "（キー未設定）"),
                 key="sb_provider",
                 help="APIキーが設定されているものだけ使えます。両方あれば切り替えて比較できます。",
             )
             st.session_state[K_PROVIDER] = chosen_provider
-            st.text_input(
-                "モデル", value=llm.default_model(chosen_provider), disabled=True, key="sb_model",
-                help=f"`{llm.PROVIDERS[chosen_provider].model_env}` で上書きできます。",
-            )
+            if not display.alias_enabled():
+                st.text_input(
+                    "モデル", value=llm.default_model(chosen_provider), disabled=True, key="sb_model",
+                    help=f"`{llm.PROVIDERS[chosen_provider].model_env}` で上書きできます。",
+                )
             temp = st.slider(
                 "temperature", min_value=0.0, max_value=1.0, value=temperature(), step=0.1, key="sb_temp",
                 help="0.0 が既定。値を上げると出力が毎回変わりやすくなります。",
@@ -247,8 +283,8 @@ def sidebar_settings(*, show_unit: bool = True, show_prompt: bool = True) -> Non
             st.session_state[K_TEMPERATURE] = float(temp)
 
         st.caption(
-            "🔑 APIキー: "
-            + (", ".join(llm.PROVIDERS[p].label for p in llm.available_providers()) or "未設定")
+            "🔑 利用できるAI: "
+            + (", ".join(display.provider_label(p) for p in llm.available_providers()) or "未設定")
         )
 
 
@@ -315,9 +351,24 @@ def run_stage1(targets: Sequence[Any], *, force: bool = False) -> dict[str, Anal
     return {thread_mod.target_key(t): results().get(thread_mod.target_key(t)) for t in targets}
 
 
+def clear_result(target_key: str) -> bool:
+    """対象1件の解析結果を消す（納得のいかない解析をやり直すため）。
+
+    キャッシュも消さないと、同じ条件での再解析が再利用に化けてAPIを呼ばない。
+    戻り値は「消すものがあったか」。
+    """
+    results_map = st.session_state.setdefault(K_RESULTS, {})
+    removed = results_map.pop(target_key, None)
+    cache = st.session_state.setdefault(K_CACHE, {})
+    for key in [k for k, v in cache.items() if v is removed and removed is not None]:
+        del cache[key]
+    st.session_state.setdefault(K_HISTORY, {}).pop(target_key, None)
+    return removed is not None
+
+
 def confirm_note(targets: Sequence[Any]) -> None:
     st.write(
-        f"対象 **{len(targets)}件** ／ {provider_label()} `{llm.default_model(provider())}` "
+        f"対象 **{len(targets)}件** ／ {display.provider_with_model(provider())} "
         f"／ temperature `{temperature()}` ／ プロンプト `{prompt_id()}`"
     )
     if len(targets) > MAX_TARGETS_PER_RUN:
@@ -397,7 +448,7 @@ def render_priority(result: AnalysisResult) -> None:
     cols[2].metric(
         "参考：加重式",
         "—" if reference is None else f"{reference:.2f}",
-        help="吉田さんレポートの加重式で計算した参考値。指示文のルール補正（相談は0.5以上等）は反映されないため、"
+        help="研究レポートの加重式で計算した参考値。指示文のルール補正（相談は0.5以上等）は反映されないため、"
         "AI採用値との差はルールが効いた箇所を示します。",
     )
     if reference is not None and result.priority_score is not None:
@@ -443,3 +494,71 @@ def render_history(target_key: str) -> None:
             row[scoring.SCORE_LABELS_JA[key]] = item.scores.get(key)
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+
+# --------------------------------------------------------------------------
+# 受信トレイ（デモ）
+# --------------------------------------------------------------------------
+UNANALYZED_LABEL = "⚪ 未解析"
+
+
+def sender_display(target: Any) -> str:
+    """一覧に出す差出人。署名（会社・部署・役職・氏名）があればそれを優先する。
+
+    署名の役職で優先度が変わる（役職補正）ことを一覧で見せるため、メールアドレスより署名を出す。
+    """
+    mail = target.last_mail if isinstance(target, thread_mod.Thread) else target
+    signature = str(mail.get("signature") or "")
+    lines = [line.strip() for line in signature.splitlines() if line.strip() and "@" not in line]
+    if lines:
+        return " ".join(lines)
+    return str(mail.get("sender") or "")
+
+
+def inbox_table(targets: Sequence[Any], found: dict[str, AnalysisResult]) -> pd.DataFrame:
+    """受信トレイの一覧。解析済みは優先度順、未解析はその後ろに受信順で並べる。
+
+    `_key`（対象キー）と `_bg`（行の背景色）は表示しない補助列。
+    """
+    rows = []
+    for order, target in enumerate(targets):
+        key = thread_mod.target_key(target)
+        result = found.get(key)
+        subject = target.subject if isinstance(target, thread_mod.Thread) else target.get("subject", "")
+        if isinstance(target, thread_mod.Thread) and target.count > 1:
+            subject = f"{subject}（{target.count}通）"
+        if result is None:
+            label, score, summary = UNANALYZED_LABEL, None, ""
+            rank, bg = len(scoring.LABEL_THRESHOLDS) + 1, "#ffffff"
+        else:
+            icon, bg = scoring.priority_style(result.priority_label)
+            label, score, summary = f"{icon} {result.priority_label}", result.priority_score, result.summary
+            rank = scoring.label_rank(result.priority_label)
+        rows.append(
+            {
+                "優先度": label,
+                "件名": subject,
+                "差出人（署名）": sender_display(target),
+                "総合": score,
+                "AIの要約": summary,
+                "_key": key,
+                "_bg": bg,
+                "_rank": rank,
+                "_order": order,
+            }
+        )
+    df = pd.DataFrame(
+        rows, columns=["優先度", "件名", "差出人（署名）", "総合", "AIの要約", "_key", "_bg", "_rank", "_order"]
+    )
+    if df.empty:
+        return df
+    df["_score"] = df["総合"].fillna(-1.0)
+    df = df.sort_values(by=["_rank", "_score", "_order"], ascending=[True, False, True])
+    return df.drop(columns=["_rank", "_order", "_score"]).reset_index(drop=True)
+
+
+def style_inbox(df: pd.DataFrame):
+    def _color(row: pd.Series) -> list[str]:
+        return [f"background-color: {row.get('_bg', '#ffffff')}; color: #222222"] * len(row)
+
+    return df.style.apply(_color, axis=1)
